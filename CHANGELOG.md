@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-25
+
+### Changed
+- Improved Docker volume configuration for better data management
+- Changed Docker volume mount from `./db` to `./data` for external data folder
+- Consolidated backup storage within database directory structure (`db/backups`)
+- Removed separate backups volume mount for cleaner Docker configuration
+- Updated environment configuration to reflect new backup path organization
+
+### Fixed
+- Docker volume mounting now properly supports external data directories
+- Backup files are now organized within the database directory for better cohesion
+
 ## [1.1.0] - 2026-01-25
 
 ### Added
