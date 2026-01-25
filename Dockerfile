@@ -6,19 +6,19 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Copy package files
-COPY package*.json ./
+COPY package.json yarn.lock ./
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
 # Copy application code
 COPY . .
 
-# Build TypeScript (use npx to ensure binary is found)
-RUN npx tsc
+# Build TypeScript
+RUN yarn tsc
 
 # Remove dev dependencies to reduce image size
-RUN npm prune --production
+RUN yarn install --production --frozen-lockfile
 
 # Create mount points for database and backups
 RUN mkdir -p /app/db /app/backups
