@@ -18,7 +18,9 @@
       "Bash(npx tsc:*)",
       "Bash(yarn version:patch:*)",
       "Bash(git reset:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(docker build:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }
