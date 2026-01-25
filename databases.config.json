@@ -1,0 +1,20 @@
+{
+  "databases": [
+    {
+      "id": "finance",
+      "name": "Finance Database",
+      "file": "finance.db",
+      "port": 4983,
+      "description": "Primary financial tracking database"
+    },
+    {
+      "id": "task",
+      "name": "Task Database",
+      "file": "task.db",
+      "port": 4984,
+      "description": "Task management database"
+    }
+  ],
+  "dbDirectory": "./db",
+  "studioHost": "0.0.0.0"
+}
