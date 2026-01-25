@@ -8,15 +8,14 @@ services:
       - "4983:4983"  # Finance database
       - "4984:4984"  # Task database
     volumes:
-      - ./db:/app/db                                  # Mount existing db folder
-      - ./backups:/app/backups                        # Mount backups folder
+      - ./data:/app/db                                # Mount external data folder (contains db files and backups)
       - ./databases.config.json:/app/databases.config.json  # Mount database config
     environment:
       - NODE_ENV=production
       - DATABASE_URL=/app/db/finance.db
       - DATABASE_PATH=/app/db
       - DATABASES_CONFIG=/app/databases.config.json
-      - BACKUP_PATH=/app/backups
+      - BACKUP_PATH=/app/db/backups                   # Backups stored within db directory
       - BACKUP_SCHEDULE=0 0 * * 0
       - BACKUP_RETENTION_DAYS=90
       - STUDIO_HOST=0.0.0.0
