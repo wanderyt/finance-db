@@ -5,14 +5,17 @@ services:
     build: .
     container_name: finance-db
     ports:
-      - "4983:4983"
+      - "4983:4983"  # Finance database
+      - "4984:4984"  # Task database
     volumes:
-      - ./db:/app/db              # Mount existing db folder
-      - ./backups:/app/backups    # Mount backups folder
+      - ./db:/app/db                                  # Mount existing db folder
+      - ./backups:/app/backups                        # Mount backups folder
+      - ./databases.config.json:/app/databases.config.json  # Mount database config
     environment:
       - NODE_ENV=production
       - DATABASE_URL=/app/db/finance.db
       - DATABASE_PATH=/app/db
+      - DATABASES_CONFIG=/app/databases.config.json
       - BACKUP_PATH=/app/backups
       - BACKUP_SCHEDULE=0 0 * * 0
       - BACKUP_RETENTION_DAYS=90

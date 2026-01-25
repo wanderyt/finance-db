@@ -129,6 +129,9 @@ backups/*
 # Build output
 dist/
 
+# Generated configs
+configs/
+
 # Firebase cache directory
 .firebase/
 
