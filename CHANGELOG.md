@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-01-25
+
+### Fixed
+- Added explicit TypeScript type imports and annotations to resolve TS4023 and TS2322 compilation errors
+- Fixed Docker build by properly typing database exports in database.ts
+- Fixed type narrowing issue in StudioManagerService.loadConfig()
+
 ## [1.2.1] - 2026-01-25
 
 ### Fixed
