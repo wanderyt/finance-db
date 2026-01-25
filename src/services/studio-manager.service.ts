@@ -43,8 +43,9 @@ export class StudioManagerService {
     }
 
     const configContent = readFileSync(configPath, 'utf-8');
-    this.config = JSON.parse(configContent);
-    return this.config;
+    const parsedConfig: DatabasesConfig = JSON.parse(configContent);
+    this.config = parsedConfig;
+    return parsedConfig;
   }
 
   /**
