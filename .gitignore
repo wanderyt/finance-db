@@ -116,6 +116,19 @@ dist
 # DynamoDB Local files
 .dynamodb/
 
+# Database
+db/*.db
+db/*.db-*
+db/*.db-shm
+db/*.db-wal
+
+# Backups
+backups/*
+!backups/.gitkeep
+
+# Build output
+dist/
+
 # Firebase cache directory
 .firebase/
 

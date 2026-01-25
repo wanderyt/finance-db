@@ -1,0 +1,41 @@
+{
+  "name": "finance-db",
+  "version": "1.0.0",
+  "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, and automated backups",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run db:studio\"",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:all": "concurrently \"npm run start\" \"npm run db:studio\"",
+    "test:backup": "./test-backup.sh",
+    "db:studio": "drizzle-kit studio --host 0.0.0.0 --port 4983",
+    "db:introspect": "drizzle-kit introspect",
+    "backup:now": "tsx -e \"import('./src/services/backup.service.js').then(m => m.BackupService.createBackup())\"",
+    "backup:cleanup": "tsx -e \"import('./src/services/backup.service.js').then(m => m.BackupService.cleanupOldBackups())\"",
+    "docker:build": "docker build -t finance-db .",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "concurrently": "^8.2.0",
+    "dotenv": "^16.4.0",
+    "drizzle-kit": "^0.24.0",
+    "drizzle-orm": "^0.33.0",
+    "node-cron": "^3.0.3",
+    "winston": "^3.14.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.14.0",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.0"
+  }
+}

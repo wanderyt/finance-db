@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  finance-db:
+    build: .
+    container_name: finance-db
+    ports:
+      - "4983:4983"
+    volumes:
+      - ./db:/app/db              # Mount existing db folder
+      - ./backups:/app/backups    # Mount backups folder
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/db/finance.db
+      - DATABASE_PATH=/app/db
+      - BACKUP_PATH=/app/backups
+      - BACKUP_SCHEDULE=0 0 * * 0
+      - BACKUP_RETENTION_DAYS=90
+      - STUDIO_HOST=0.0.0.0
+      - STUDIO_PORT=4983
+      - LOG_LEVEL=info
+    restart: unless-stopped

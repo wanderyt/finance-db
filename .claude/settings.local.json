@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(curl:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nchore: improve create_pr workflow with uncommitted changes handling\n\n- Add step 2 to check and commit uncommitted changes before version bump\n- Renumber subsequent steps \\(3-11\\)\n- Clarify step 8 as \"version bump and changelog\" commit\n- Add curl permission to settings.local.json for API calls\n\nThis ensures all work is properly committed in logical groups before\nthe PR creation process begins.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(yarn version:*)",
+      "Bash(git push)",
+      "Bash(yarn version:minor:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(sqlite3:*)",
+      "Bash(yarn add:*)",
+      "Bash(node:*)",
+      "Bash(yarn build:*)",
+      "Bash(yarn lint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(yarn version:patch:*)",
+      "Bash(git reset:*)",
+      "Bash(git config:*)"
+    ]
+  }
+}
