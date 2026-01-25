@@ -20,8 +20,8 @@ RUN npm run build
 # Create mount points for database and backups
 RUN mkdir -p /app/db /app/backups
 
-# Expose Drizzle Studio port
-EXPOSE 4983
+# Expose Drizzle Studio ports
+EXPOSE 4983 4984
 
 # Start application and Drizzle Studio
 CMD ["npm", "run", "start:all"]

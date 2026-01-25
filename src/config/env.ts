@@ -7,6 +7,7 @@ dotenv.config();
 interface EnvironmentConfig {
   DATABASE_URL: string;
   DATABASE_PATH: string;
+  DATABASES_CONFIG: string;
   BACKUP_PATH: string;
   BACKUP_SCHEDULE: string;
   BACKUP_RETENTION_DAYS: number;
@@ -54,6 +55,7 @@ function validateEnv(): EnvironmentConfig {
   return {
     DATABASE_URL: resolve(process.env.DATABASE_URL!),
     DATABASE_PATH: resolve(process.env.DATABASE_PATH!),
+    DATABASES_CONFIG: resolve(process.env.DATABASES_CONFIG || './databases.config.json'),
     BACKUP_PATH: resolve(process.env.BACKUP_PATH!),
     BACKUP_SCHEDULE: process.env.BACKUP_SCHEDULE!,
     BACKUP_RETENTION_DAYS: retentionDays,

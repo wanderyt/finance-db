@@ -25,14 +25,15 @@ export function startBackupJob(): void {
   logger.info(`Backup retention period: ${env.BACKUP_RETENTION_DAYS} days`);
 
   scheduledJob = cron.schedule(env.BACKUP_SCHEDULE, async () => {
-    logger.info('Executing scheduled backup job...');
+    logger.info('Executing scheduled backup job for all databases...');
 
     try {
-      // Create backup
-      await BackupService.createBackup();
+      // Create backups for all databases
+      const backupPaths = await BackupService.createAllBackups();
+      logger.info(`Created ${backupPaths.length} backup(s)`);
 
-      // Cleanup old backups
-      await BackupService.cleanupOldBackups();
+      // Cleanup old backups for all databases
+      await BackupService.cleanupAllOldBackups();
 
       logger.info('Scheduled backup job completed successfully');
     } catch (error) {
