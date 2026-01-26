@@ -45,7 +45,7 @@ fi
 if [ -d "node_modules" ]; then
   pass "Dependencies installed"
 else
-  fail "Dependencies not installed (run: npm install)"
+  fail "Dependencies not installed (run: yarn install)"
   exit 1
 fi
 
@@ -68,8 +68,8 @@ echo ""
 
 # Test 2: Create backup
 echo "Test 2: Creating manual backup..."
-info "Running: npm run backup:now"
-if npm run backup:now > /tmp/backup-test.log 2>&1; then
+info "Running: yarn run backup:now"
+if yarn run backup:now > /tmp/backup-test.log 2>&1; then
   pass "Backup command executed successfully"
 else
   fail "Backup command failed"
@@ -149,7 +149,7 @@ touch "$TEST_OLD_BACKUP"
 touch -t $(date -v-100d +%Y%m%d%H%M 2>/dev/null || date -d "100 days ago" +%Y%m%d%H%M) "$TEST_OLD_BACKUP" 2>/dev/null || touch -d "100 days ago" "$TEST_OLD_BACKUP"
 
 info "Running cleanup..."
-npm run backup:cleanup > /tmp/cleanup-test.log 2>&1
+yarn run backup:cleanup > /tmp/cleanup-test.log 2>&1
 
 if [ ! -f "$TEST_OLD_BACKUP" ]; then
   pass "Cleanup removed old backup file"
@@ -186,7 +186,7 @@ if [ $TESTS_FAILED -eq 0 ]; then
   echo -e "${GREEN}✓ All tests passed! Backup system is working correctly.${NC}"
   echo ""
   echo "Next steps:"
-  echo "  - Start the service: npm run dev:all"
+  echo "  - Start the service: yarn run dev:all"
   echo "  - Access Drizzle Studio: http://localhost:4983"
   echo "  - View logs: tail -f combined.log"
   exit 0
