@@ -20,10 +20,17 @@
       "Bash(git reset:*)",
       "Bash(git config:*)",
       "Bash(docker build:*)",
-      "Bash(npm run build:*)",
-      "Bash(npm version:*)",
+      "Bash(yarn run build:*)",
       "Bash(yarn install)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(ls:*)",
+      "Bash(yarn info:*)",
+      "Bash(corepack enable:*)",
+      "Bash(yarn set:*)",
+      "Bash(yarn --version)",
+      "Bash(test:*)",
+      "Bash(yarn list:*)",
+      "Bash(yarn install:*)"
     ]
   }
 }

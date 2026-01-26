@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-25
+
+### Changed
+- Migrated from Yarn 1.22.22 to Yarn Berry 4.12.0 (latest stable)
+- Configured Yarn Berry with `nodeLinker: node-modules` for better-sqlite3 native module compatibility
+- Updated Dockerfile to support Yarn Berry with Corepack
+- Replaced `--frozen-lockfile` flag with `--immutable` in Dockerfile
+- Fixed Dockerfile CMD to use `yarn` instead of `npm`
+- Standardized all npm references to yarn across test scripts (test-backup.sh, test-multi-studio.sh)
+- Updated README documentation with ~50 npm to yarn replacements
+- Updated Claude Code settings for Yarn Berry permissions
+- Regenerated yarn.lock in v8 format with enhanced metadata
+
+### Technical
+- Lockfile format upgraded from Yarn v1 to Yarn v8
+- Added .yarnrc.yml configuration file
+- Enabled global cache for faster installations
+- Maintained traditional node_modules structure for native module compatibility
+
 ## [1.3.0] - 2026-01-25
 
 ### Changed

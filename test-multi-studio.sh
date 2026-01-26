@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Step 1: Generate configs
 echo "Step 1: Generating database configurations..."
-npm run config:generate
+yarn run config:generate
 if [ $? -ne 0 ]; then
     echo -e "${RED}FAILED: Config generation${NC}"
     exit 1
@@ -49,7 +49,7 @@ echo ""
 
 # Step 3: Start Studio instances in background
 echo "Step 3: Starting Studio instances..."
-npm run db:studio &
+yarn run db:studio &
 STUDIO_PID=$!
 echo "Studio process started with PID: $STUDIO_PID"
 echo ""
