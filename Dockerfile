@@ -5,20 +5,23 @@ WORKDIR /app
 # Install build dependencies for better-sqlite3 native compilation
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
-COPY package.json yarn.lock ./
+# Enable Corepack for Yarn Berry support
+RUN corepack enable
+
+# Copy package files and Yarn configuration
+COPY package.json yarn.lock .yarnrc.yml ./
 
 # Install dependencies (including dev dependencies for build)
-RUN yarn install --frozen-lockfile
+RUN yarn install --immutable
 
 # Copy application code
 COPY . .
 
 # Build TypeScript
-RUN yarn tsc
+RUN yarn build
 
 # Remove dev dependencies to reduce image size
-RUN yarn install --production --frozen-lockfile
+RUN yarn workspaces focus --production 2>/dev/null || yarn install --production --immutable
 
 # Create mount points for database and backups
 RUN mkdir -p /app/db /app/backups
@@ -27,4 +30,4 @@ RUN mkdir -p /app/db /app/backups
 EXPOSE 4983 4984
 
 # Start application and Drizzle Studio
-CMD ["npm", "run", "start:all"]
+CMD ["yarn", "run", "start:all"]
