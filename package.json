@@ -41,5 +41,6 @@
     "@types/node-cron": "^3.0.11",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0"
-  }
+  },
+  "packageManager": "yarn@4.12.0"
 }
