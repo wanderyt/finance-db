@@ -34,7 +34,7 @@ The service manages a comprehensive financial tracking database with 10 tables:
 ### Prerequisites
 
 - Node.js 20 or higher
-- npm or yarn
+- Yarn (recommended)
 
 ### Installation
 
@@ -46,7 +46,7 @@ cd finance-db
 
 2. Install dependencies:
 ```bash
-npm install
+yarn install
 ```
 
 3. Create environment configuration:
@@ -61,12 +61,12 @@ ls -lh db/finance.db
 
 5. Build the TypeScript code:
 ```bash
-npm run build
+yarn build
 ```
 
 6. Start the service with Drizzle Studio:
 ```bash
-npm run dev:all
+yarn dev:all
 ```
 
 This will start both:
@@ -75,7 +75,7 @@ This will start both:
 
 Alternatively, start just the service:
 ```bash
-npm run dev
+yarn dev
 ```
 
 ## Environment Variables
@@ -95,32 +95,32 @@ Create a `.env` file based on `.env.example`:
 | `NODE_ENV` | `development` | Environment (development/production) |
 | `LOG_LEVEL` | `info` | Logging level (error/warn/info/debug) |
 
-## npm Scripts
+## Yarn Scripts
 
 ### Development
-- `npm run dev` - Start the service in watch mode (auto-restart on changes)
-- `npm run dev:all` - **Start service + Drizzle Studio together** (recommended for development)
-- `npm run build` - Compile TypeScript to JavaScript
-- `npm start` - Start the compiled service
-- `npm run start:all` - **Start service + Drizzle Studio together** (recommended for production)
+- `yarn dev` - Start the service in watch mode (auto-restart on changes)
+- `yarn dev:all` - **Start service + Drizzle Studio together** (recommended for development)
+- `yarn build` - Compile TypeScript to JavaScript
+- `yarn start` - Start the compiled service
+- `yarn start:all` - **Start service + Drizzle Studio together** (recommended for production)
 
 ### Database Management
-- `npm run config:generate` - Generate Drizzle configs for all databases
-- `npm run db:studio` - Launch all Drizzle Studio instances (multi-database)
-- `npm run db:studio:single` - Launch single Studio instance (legacy mode)
-- `npm run db:studio:finance` - Launch only Finance database Studio
-- `npm run db:introspect` - Generate schema from existing database
+- `yarn config:generate` - Generate Drizzle configs for all databases
+- `yarn db:studio` - Launch all Drizzle Studio instances (multi-database)
+- `yarn db:studio:single` - Launch single Studio instance (legacy mode)
+- `yarn db:studio:finance` - Launch only Finance database Studio
+- `yarn db:introspect` - Generate schema from existing database
 
 ### Backup Operations
-- `npm run backup:now` - Create a backup immediately
-- `npm run backup:cleanup` - Clean up old backups (> 90 days)
-- `npm run test:backup` - Run automated backup system tests
+- `yarn backup:now` - Create a backup immediately
+- `yarn backup:cleanup` - Clean up old backups (> 90 days)
+- `yarn test:backup` - Run automated backup system tests
 
 ### Docker
-- `npm run docker:build` - Build Docker image
-- `npm run docker:up` - Start service in Docker
-- `npm run docker:down` - Stop Docker containers
-- `npm run docker:logs` - View Docker logs
+- `yarn docker:build` - Build Docker image
+- `yarn docker:up` - Start service in Docker
+- `yarn docker:down` - Stop Docker containers
+- `yarn docker:logs` - View Docker logs
 
 ## Drizzle Studio
 
@@ -130,13 +130,13 @@ Drizzle Studio provides a web-based interface to view and manage your database.
 
 **Option 1: Launch with the backup service (recommended)**
 ```bash
-npm run dev:all
+yarn dev:all
 ```
 This starts both the backup scheduler and Drizzle Studio together.
 
 **Option 2: Launch standalone**
 ```bash
-npm run db:studio
+yarn db:studio
 ```
 
 Then open your browser to: https://local.drizzle.studio?port=4983&host=0.0.0.0
@@ -174,7 +174,7 @@ Database configuration is managed through [databases.config.json](databases.conf
 
 ### Accessing Different Databases
 
-When you run `npm run dev:all` or `npm run db:studio`, all configured databases are accessible.
+When you run `yarn dev:all` or `yarn db:studio`, all configured databases are accessible.
 
 **Local Access:**
 - **Finance Database**: https://local.drizzle.studio?port=4983&host=0.0.0.0
@@ -192,7 +192,7 @@ You can also launch a single database's Studio instance:
 
 ```bash
 # Launch only Finance database
-npm run db:studio:finance
+yarn db:studio:finance
 ```
 
 ### Adding New Databases
@@ -221,7 +221,7 @@ ports:
 
 3. **Restart the service**:
 ```bash
-npm run dev:all
+yarn dev:all
 ```
 
 The new database will be accessible at https://local.drizzle.studio?port=4984&host=0.0.0.0
@@ -240,7 +240,7 @@ Database-specific Drizzle configs are automatically generated from `databases.co
 
 ```bash
 # Manual generation (optional - runs automatically)
-npm run config:generate
+yarn config:generate
 ```
 
 This creates:
@@ -259,10 +259,10 @@ The backup system automatically handles all configured databases:
 **Manual backups**:
 ```bash
 # Backup all databases
-npm run backup:now
+yarn backup:now
 
 # Cleanup old backups for all databases
-npm run backup:cleanup
+yarn backup:cleanup
 ```
 
 ### Testing Multiple Databases
@@ -296,7 +296,7 @@ The service automatically creates weekly backups (every Sunday at midnight by de
 Create a backup immediately:
 
 ```bash
-npm run backup:now
+yarn backup:now
 ```
 
 Backups are stored in the `backups/` directory with timestamped filenames:
@@ -309,7 +309,7 @@ sqlite-backup-2026-01-25-143022.db
 Backups older than 90 days (configurable via `BACKUP_RETENTION_DAYS`) are automatically deleted after each backup. You can also trigger cleanup manually:
 
 ```bash
-npm run backup:cleanup
+yarn backup:cleanup
 ```
 
 ### Restoring from Backup
@@ -352,8 +352,8 @@ See the comprehensive [Backup Testing Guide](docs/backup-testing-guide.md) for:
 ### Build and Start
 
 ```bash
-npm run docker:build
-npm run docker:up
+yarn docker:build
+yarn docker:up
 ```
 
 ### Configuration
@@ -409,12 +409,12 @@ Your Browser → https://local.drizzle.studio (Drizzle's web proxy)
              Your finance.db database
 ```
 
-The container runs `npm run start:all` which launches all services concurrently.
+The container runs `yarn run start:all` which launches all services concurrently.
 
 ### View Logs
 
 ```bash
-npm run docker:logs
+yarn docker:logs
 ```
 
 Or use Docker Compose directly:
@@ -425,7 +425,7 @@ docker-compose logs -f finance-db
 ### Stop the Service
 
 ```bash
-npm run docker:down
+yarn docker:down
 ```
 
 ## Development
@@ -471,8 +471,8 @@ finance-db/
 
 1. Define the table schema in `src/db/schema.ts`
 2. Export TypeScript types
-3. Rebuild the project: `npm run build`
-4. Launch Drizzle Studio to verify: `npm run db:studio`
+3. Rebuild the project: `yarn build`
+4. Launch Drizzle Studio to verify: `yarn db:studio`
 
 ### Using the Base Repository
 
@@ -518,7 +518,7 @@ await userRepo.delete(1);
 - Ensure the `db/` directory exists
 - Check file permissions
 
-### npm Install Fails (better-sqlite3)
+### Yarn Install Fails (better-sqlite3)
 
 **Problem**: Native module compilation errors
 
@@ -526,7 +526,7 @@ await userRepo.delete(1);
 - Ensure Python 3 is installed
 - On macOS: Install Xcode Command Line Tools: `xcode-select --install`
 - On Linux: Install `python3`, `make`, `g++`
-- On Windows: Install windows-build-tools: `npm install --global windows-build-tools`
+- On Windows: Install windows-build-tools and ensure proper build environment
 
 ### Backup Scheduler Not Running
 
