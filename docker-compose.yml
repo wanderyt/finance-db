@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   finance-db:
-    build: .
+    image: wanderyt/finance-db:latest
     container_name: finance-db
     ports:
       - "4983:4983"  # Finance database
