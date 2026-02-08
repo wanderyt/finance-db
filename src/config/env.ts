@@ -15,6 +15,9 @@ interface EnvironmentConfig {
   STUDIO_PORT: number;
   NODE_ENV: string;
   LOG_LEVEL: string;
+  POCKET_MONEY_SCHEDULE: string;
+  POCKET_MONEY_WEEKLY_AMOUNT: number;
+  POCKET_MONEY_ENABLED: boolean;
 }
 
 function validateEnv(): EnvironmentConfig {
@@ -52,6 +55,14 @@ function validateEnv(): EnvironmentConfig {
     throw new Error('STUDIO_PORT must be a valid port number (1-65535)');
   }
 
+  // Parse pocket money configuration
+  const pocketMoneyWeeklyAmount = parseInt(process.env.POCKET_MONEY_WEEKLY_AMOUNT || '500', 10);
+  if (isNaN(pocketMoneyWeeklyAmount) || pocketMoneyWeeklyAmount <= 0) {
+    throw new Error('POCKET_MONEY_WEEKLY_AMOUNT must be a positive number');
+  }
+
+  const pocketMoneyEnabled = process.env.POCKET_MONEY_ENABLED !== 'false';
+
   return {
     DATABASE_URL: resolve(process.env.DATABASE_URL!),
     DATABASE_PATH: resolve(process.env.DATABASE_PATH!),
@@ -62,7 +73,10 @@ function validateEnv(): EnvironmentConfig {
     STUDIO_HOST: process.env.STUDIO_HOST || '0.0.0.0',
     STUDIO_PORT: studioPort,
     NODE_ENV: process.env.NODE_ENV || 'development',
-    LOG_LEVEL: process.env.LOG_LEVEL || 'info'
+    LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    POCKET_MONEY_SCHEDULE: process.env.POCKET_MONEY_SCHEDULE || '0 9 * * 0',
+    POCKET_MONEY_WEEKLY_AMOUNT: pocketMoneyWeeklyAmount,
+    POCKET_MONEY_ENABLED: pocketMoneyEnabled
   };
 }
 

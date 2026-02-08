@@ -1,6 +1,7 @@
 import { logger } from "./utils/logger.js";
 import { db, rawDb } from "./config/database.js";
 import { startBackupJob, stopBackupJob } from "./jobs/backup.job.js";
+import { startPocketMoneyJob, stopPocketMoneyJob } from "./jobs/pocket-money.job.js";
 import * as schema from "./db/schema.js";
 import { env } from "./config/env.js";
 
@@ -19,6 +20,11 @@ async function main() {
     logger.info(`Backup path: ${env.BACKUP_PATH}`);
     logger.info(`Backup schedule: ${env.BACKUP_SCHEDULE}`);
     logger.info(`Backup retention: ${env.BACKUP_RETENTION_DAYS} days`);
+    logger.info(`Pocket money enabled: ${env.POCKET_MONEY_ENABLED}`);
+    if (env.POCKET_MONEY_ENABLED) {
+      logger.info(`Pocket money schedule: ${env.POCKET_MONEY_SCHEDULE}`);
+      logger.info(`Weekly allowance: $${env.POCKET_MONEY_WEEKLY_AMOUNT / 100}`);
+    }
 
     // Test database connection
     logger.info("Testing database connection...");
@@ -31,6 +37,11 @@ async function main() {
     logger.info("Initializing backup scheduler...");
     startBackupJob();
     logger.info("Backup scheduler initialized");
+
+    // Start pocket money scheduler
+    logger.info("Initializing pocket money scheduler...");
+    startPocketMoneyJob();
+    logger.info("Pocket money scheduler initialized");
 
     // Log startup complete
     logger.info("=".repeat(60));
@@ -60,6 +71,9 @@ function shutdown(signal: string) {
 
   // Stop backup scheduler
   stopBackupJob();
+
+  // Stop pocket money scheduler
+  stopPocketMoneyJob();
 
   // Close database connection
   logger.info("Closing database connection...");
