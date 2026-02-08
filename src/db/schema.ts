@@ -146,6 +146,34 @@ export const receipts = sqliteTable('receipts', {
   idxReceiptsSha256: uniqueIndex('idx_receipts_sha256').on(table.sha256)
 }));
 
+// Pocket Money table
+export const pocketMoney = sqliteTable('pocket_money', {
+  pocketMoneyId: integer('pocket_money_id').primaryKey(),
+  personId: integer('person_id').notNull().references(() => persons.personId, { onDelete: 'cascade' }),
+  transactionDate: text('transaction_date').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  transactionType: text('transaction_type').notNull(),
+  reason: text('reason').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  createdBy: text('created_by').notNull().default('system')
+}, (table) => ({
+  idxPocketMoneyPerson: index('idx_pocket_money_person').on(table.personId),
+  idxPocketMoneyDate: index('idx_pocket_money_date').on(table.transactionDate),
+  idxPocketMoneyType: index('idx_pocket_money_type').on(table.transactionType)
+}));
+
+// Pocket Money Job State table
+export const pocketMoneyJobState = sqliteTable('pocket_money_job_state', {
+  jobId: integer('job_id').primaryKey(),
+  jobName: text('job_name').notNull(),
+  lastRunDate: text('last_run_date').notNull(),
+  lastSuccessDate: text('last_success_date').notNull(),
+  runCount: integer('run_count').notNull().default(0),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (table) => ({
+  uniqueJobName: uniqueIndex('unique_job_name').on(table.jobName)
+}));
+
 // Type exports for use in application
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -176,3 +204,9 @@ export type NewFinTag = typeof finTags.$inferInsert;
 
 export type Receipt = typeof receipts.$inferSelect;
 export type NewReceipt = typeof receipts.$inferInsert;
+
+export type PocketMoney = typeof pocketMoney.$inferSelect;
+export type NewPocketMoney = typeof pocketMoney.$inferInsert;
+
+export type PocketMoneyJobState = typeof pocketMoneyJobState.$inferSelect;
+export type NewPocketMoneyJobState = typeof pocketMoneyJobState.$inferInsert;
