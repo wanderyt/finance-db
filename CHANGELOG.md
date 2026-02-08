@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-02
+
+### Added
+- Automated pocket money tracking system for Robin
+- Database schema with `pocket_money` and `pocket_money_job_state` tables
+- Scheduled job to automatically add $5 weekly allowance every Sunday at 9:00 AM
+- Intelligent backfill logic to catch up on missed weeks during service downtime
+- Initial balance of $150 (Jan 1, 2026) with automatic history generation
+- Comprehensive pocket money feature documentation
+- Environment configuration for pocket money schedule and amount
+
+### Changed
+- Integrated pocket money job into main application startup/shutdown
+- Added pocket money environment variables (POCKET_MONEY_SCHEDULE, POCKET_MONEY_WEEKLY_AMOUNT, POCKET_MONEY_ENABLED)
+
+### Technical
+- PocketMoneyRepository for transaction CRUD operations
+- PocketMoneyJobStateRepository for job state tracking
+- PocketMoneyService with backfill algorithm for missed weeks
+- Migration script to initialize tables and seed initial data
+- Transaction types: initial, weekly_allowance, bonus, deduction
+- Hardcoded to Robin (person_id = 1) for single-child tracking
+
 ## [1.6.0] - 2026-01-27
 
 ### Added
