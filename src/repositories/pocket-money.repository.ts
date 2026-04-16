@@ -114,7 +114,7 @@ export class PocketMoneyRepository {
   /**
    * Find transactions by type and person
    */
-  async findByType(personId: number, transactionType: string): Promise<PocketMoney[]> {
+  async findByType(personId: number, transactionType: PocketMoney['transactionType']): Promise<PocketMoney[]> {
     try {
       logger.debug(`Finding ${transactionType} transactions for person ${personId}`);
 

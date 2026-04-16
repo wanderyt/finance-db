@@ -152,7 +152,7 @@ export const pocketMoney = sqliteTable('pocket_money', {
   personId: integer('person_id').notNull().references(() => persons.personId, { onDelete: 'cascade' }),
   transactionDate: text('transaction_date').notNull(),
   amountCents: integer('amount_cents').notNull(),
-  transactionType: text('transaction_type').notNull(),
+  transactionType: text('transaction_type').notNull().$type<'initial' | 'weekly_allowance' | 'bonus' | 'deduction' | 'expense' | 'red_pocket'>(),
   reason: text('reason').notNull(),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   createdBy: text('created_by').notNull().default('system')
