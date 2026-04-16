@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-04-16
+
+### Added
+- `red_pocket` transaction type for pocket money tracking
+- SQL migration (`migrations/002_add_red_pocket_type.sql`) to add `red_pocket` to CHECK constraint
+- High-level design document (`docs/high-level-design.md`)
+
+### Fixed
+- Backup failure in Docker (`disk I/O error`) caused by WAL checkpoint on read-only database connection
+- Removed unnecessary WAL checkpoint in `createBackupForDatabase` — `better-sqlite3`'s `backup()` API handles consistency
+
+### Changed
+- Added type-safe union to `transactionType` column in Drizzle schema to match DB CHECK constraint
+- Updated `PocketMoneyRepository.findByType()` parameter type from `string` to typed union
+
 ## [1.7.0] - 2026-02-02
 
 ### Added
