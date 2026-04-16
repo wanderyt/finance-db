@@ -184,11 +184,8 @@ export class BackupService {
       const db = new Database(dbAbsolutePath, { readonly: true });
 
       try {
-        // Checkpoint WAL to ensure all changes are in the main database file
-        logger.debug(`Performing WAL checkpoint for ${dbId}...`);
-        db.pragma('wal_checkpoint(TRUNCATE)');
-
         // Use better-sqlite3's backup API for online backup
+        // No WAL checkpoint needed — backup() handles consistency
         logger.debug(`Creating backup: ${backupPath}`);
         await db.backup(backupPath);
 
