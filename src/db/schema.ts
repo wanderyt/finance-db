@@ -116,7 +116,8 @@ export const finItems = sqliteTable('fin_items', {
   personId: integer('person_id').references(() => persons.personId, { onDelete: 'set null' }),
   category: text('category'),
   subcategory: text('subcategory'),
-  notes: text('notes')
+  notes: text('notes'),
+  brandName: text('brand_name')
 }, (table) => ({
   idxItemsFin: index('idx_items_fin').on(table.finId),
   idxItemsPerson: index('idx_items_person').on(table.personId)
