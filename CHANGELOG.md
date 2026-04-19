@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-04-19
+
+### Added
+- `brand_name` (nullable TEXT) column on `fin_items` to track product brand (e.g., Kirkland, President's Choice); omitted for unbranded items like loose vegetables
+- SQL migration `migrations/003_add_brand_name_to_fin_items.sql`
+- `CLAUDE.md` with design doc index and guideline to keep docs up to date after every feature change
+
 ## [1.8.0] - 2026-04-16
 
 ### Added
