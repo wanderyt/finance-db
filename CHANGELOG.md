@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Bumped `package.json` version to 1.9.0
 - Added dependencies: `@modelcontextprotocol/sdk` ^1.0.0, `zod` ^3.23.0
+- `src/config/env.ts` no longer throws on missing env vars. Every variable now has a default that matches `.env.example`, so a `.env` file is optional. Numeric/enum values are still validated when explicitly set, so typos still surface. This removes a foot-gun where pointing an MCP client at the wrong entry (`dist/index.js` instead of `dist/mcp/server.js`) produced a confusing crash about `BACKUP_PATH` being missing.
 
 ## [1.8.1] - 2026-04-19
 
