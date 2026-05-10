@@ -1,8 +1,11 @@
 {
   "name": "finance-db",
   "version": "1.8.1",
-  "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, and automated backups",
+  "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, automated backups, and an MCP server for read-only queries",
   "main": "dist/index.js",
+  "bin": {
+    "finance-db-mcp": "dist/mcp/server.js"
+  },
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -11,12 +14,15 @@
     "start": "node dist/index.js",
     "start:all": "concurrently \"yarn start\" \"yarn db:studio\"",
     "test:backup": "./test-backup.sh",
+    "test:mcp": "tsx src/scripts/mcp-smoke.ts",
     "config:generate": "tsx scripts/generate-configs.ts",
     "db:studio": "yarn config:generate && tsx src/scripts/start-studios.ts",
     "db:studio:single": "drizzle-kit studio --host 0.0.0.0 --port 4983",
     "db:studio:finance": "drizzle-kit studio --config=configs/drizzle.finance.config.ts --port 4983 --host 0.0.0.0",
     "db:studio:task": "drizzle-kit studio --config=configs/drizzle.task.config.ts --port 4984 --host 0.0.0.0",
     "db:introspect": "drizzle-kit introspect",
+    "mcp:dev": "tsx watch src/mcp/server.ts",
+    "mcp:start": "node dist/mcp/server.js",
     "backup:now": "tsx -e \"import('./src/services/backup.service.js').then(m => m.BackupService.createBackup())\"",
     "backup:cleanup": "tsx -e \"import('./src/services/backup.service.js').then(m => m.BackupService.cleanupOldBackups())\"",
     "docker:build": "docker build -t finance-db .",
@@ -27,6 +33,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^11.0.0",
     "concurrently": "^8.2.0",
     "dotenv": "^16.4.0",
@@ -34,7 +41,8 @@
     "drizzle-orm": "^0.33.0",
     "node-cron": "^3.0.3",
     "tsx": "^4.19.0",
-    "winston": "^3.14.0"
+    "winston": "^3.14.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
