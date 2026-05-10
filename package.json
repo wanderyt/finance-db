@@ -1,6 +1,6 @@
 {
   "name": "finance-db",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, automated backups, and an MCP server for read-only queries",
   "main": "dist/index.js",
   "bin": {
