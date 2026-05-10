@@ -170,6 +170,38 @@ The MCP server opens `finance.db` with `{ readonly: true }`. By design, it can o
 | `src/scripts/mcp-smoke.ts` | TS smoke test exercising every repository method |
 | `scripts/verify-mcp-sql.py` | SQL-level verification (no Node deps required) |
 
+## Maintenance
+
+The MCP server is a downstream consumer of the Drizzle schema, so any change to the `fin` or `fin_items` tables (or to any future table the MCP exposes) needs a coordinated update across these files. The list below is the practical checklist; the higher-level rationale lives in [CLAUDE.md → Keeping Code in Sync with Schema Changes](../CLAUDE.md).
+
+### When `fin` or `fin_items` changes
+
+| Change | Files to update |
+|--------|-----------------|
+| **Add a column** the MCP should return | `src/db/schema.ts`, new migration in `migrations/`, `src/repositories/fin-items.repository.ts` (SELECT in `runJoinedQuery` + `FinItemWithFin` interface + `reshapeRow`), result-shape example in this doc |
+| **Add a column** the MCP should *also filter on* | All of the above, plus a new method on `FinItemsRepository`, a new entry in `buildFinItemsTools()` in `src/mcp/tools/fin-items.ts`, a new zod schema in `src/mcp/schemas.ts`, the tools table in this doc |
+| **Rename a column** | `src/db/schema.ts` (tsc will then flag every Drizzle call site — walk through and fix each), `migrations/` SQL, `scripts/verify-mcp-sql.py` (hand-written SQL — not caught by tsc), this doc's result-shape example |
+| **Drop a column** | Same as rename, plus remove the field from `FinItemWithFin` and `reshapeRow`, and either retire the matching tool or change its semantics (mark a tool removal as a major version bump) |
+| **Add a new queryable table** | New repository under `src/repositories/`, new tool module under `src/mcp/tools/`, register in `buildFinItemsTools()` (or a sibling builder), new design doc row in `CLAUDE.md` |
+
+### Verify after any change
+
+1. `yarn build` — catches Drizzle-side type errors.
+2. `yarn test:mcp` — runs `src/scripts/mcp-smoke.ts` against the live DB.
+3. `python3 scripts/verify-mcp-sql.py` — independent SQL-level check (no Node deps; useful when refactoring the repository).
+4. `yarn mcp:dev` and call each affected tool from a real client (openclaw, Claude Desktop, or `npx @modelcontextprotocol/inspector node dist/mcp/server.js`) to confirm the JSON shape clients see.
+
+### Backwards compatibility
+
+External clients spawn the MCP server as a subprocess and discover tools at runtime via `tools/list`, so:
+
+- **Adding** a new tool, a new optional field on an existing tool, or a new field on the result row is **safe** — minor version bump.
+- **Renaming or removing** a tool, **renaming** an existing input field, or **tightening** validation on an existing field is a **breaking change** — major version bump, and call it out in CHANGELOG so users of the MCP know to update their clients.
+
+### Where to update docs
+
+After any of the above, update this doc's tool table, result-shape example, and configuration section as needed; add a CHANGELOG entry; bump the version per [Semantic Versioning](https://semver.org/).
+
 ## Future work
 
 - **Task DB tools.** `databases.config.json` declares a `task.db` for todos but the schema is undefined (no Drizzle tables, no migration, no DB file on disk). When that schema is designed, add `query_tasks_*` tools to the same MCP server.
