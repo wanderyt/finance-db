@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-05-09
+
+### Added
+- MCP server (`src/mcp/`) exposing read-only finance-db queries over JSON-RPC stdio for use by external MCP clients (e.g. the `openclaw` project, Claude Desktop)
+- 5 query tools, each joining `fin_items` to its parent `fin` transaction and returning the line item plus full transaction context (date, merchant, city, category, all four currency amounts):
+  - `query_fin_items_by_merchant` — substring or exact merchant match (case-insensitive)
+  - `query_fin_items_by_date_range` — inclusive `from`/`to` date window
+  - `query_fin_items_by_city` — substring or exact city match (case-insensitive)
+  - `query_fin_items_by_category` — category + optional subcategory, with `scope: "fin" | "item" | "either"` to control whether to match the transaction-level or line-item-level category
+  - `query_fin_items_by_product` — match by `name`, `brand`, or both (against `fin_items.name` / `fin_items.brand_name`)
+- `FinItemsRepository` (`src/repositories/fin-items.repository.ts`) — read-only repository with all 5 query methods. Default sort: `fin.date DESC`, then `fin_items.line_no ASC`. Default page size 50, hard cap 500. All queries hardcoded to `user_id = 1` via `DEFAULT_USER_ID` (DB is single-user)
+- MCP-only logger (`src/mcp/logger.ts`) writing exclusively to stderr — required because the JSON-RPC protocol uses stdout
+- MCP-only config (`src/mcp/config.ts`) reading just `DATABASE_URL` (default `./db/finance.db`) and `MCP_LOG_LEVEL`, decoupled from the heavyweight global env validation
+- Zod input schemas (`src/mcp/schemas.ts`) and JSON Schemas for `tools/list`
+- TypeScript smoke test (`src/scripts/mcp-smoke.ts`, runnable via `yarn test:mcp`) that exercises every repository method against `finance.db`
+- Python SQL-level verifier (`scripts/verify-mcp-sql.py`) that confirms join, predicate, and ordering semantics without requiring Node deps
+- New design doc `docs/mcp-server.md` documenting tools, result shape, configuration, client wiring, and architecture
+- npm scripts: `mcp:dev` (tsx watch), `mcp:start` (compiled), `test:mcp` (smoke test); `bin.finance-db-mcp` entry pointing at `dist/mcp/server.js`
+
+### Changed
+- Bumped `package.json` version to 1.9.0
+- Added dependencies: `@modelcontextprotocol/sdk` ^1.0.0, `zod` ^3.23.0
+
 ## [1.8.1] - 2026-04-19
 
 ### Added
