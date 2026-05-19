@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-05-18
+
+### Changed (data only — no code or API change)
+- SQL migration `migrations/004_normalize_merchant_names.sql` consolidates merchant- and subcategory-name variants to canonical forms so the new discovery tools return one row per real-world entity instead of fragmented spellings:
+  - `T&T`, `大统华` → `T&T Supermarket` (169 rows)
+  - `Costco Wholesale` → `Costco` (defensive — 0 rows match today, future-proofs against extractor drift)
+  - `Food Basic` → `Food Basics` (61 rows)
+  - Subcategory dedup under `居家`: `美发美容` → `美容美发` (11 rows)
+- Total of 241 rows updated, wrapped in a single `BEGIN`/`COMMIT` transaction for atomicity. Pre- and post-migration `SELECT` counts are printed by the script so the operator can sanity-check the merge.
+- Runbook (backup → host-side or `docker exec` apply) is documented in the SQL file's header. The base image (`node:20-alpine`) doesn't ship with the `sqlite3` CLI; the runbook covers the one-shot `apk add sqlite` step needed for the in-container path.
+- Server `SERVER_VERSION` and `package.json` version intentionally **not** bumped — no code changes.
+
 ## [1.10.0] - 2026-05-18
 
 ### Added
