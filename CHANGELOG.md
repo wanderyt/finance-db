@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-05-18
+
+### Added
+- 6 MCP **discovery tools** so AI clients can introspect the value space before calling the `query_fin_items_by_*` tools. Each returns rows ordered by `last_seen DESC, count DESC, value ASC` — recency wins so newer canonical values (e.g. a merchant name introduced by a recent extractor update) rank above legacy variants, but `count` is still surfaced so the client can see relative frequency:
+  - `get_all_merchants` — distinct `fin.merchant` values
+  - `get_all_cities` — distinct `fin.city` values
+  - `get_all_categories` — distinct `fin.category` values (transaction-level only — line-item categories are intentionally not unioned in)
+  - `get_all_subcategories` — distinct `fin.subcategory` values; optional `category` filter to scope to subcategories under a specific category
+  - `get_all_brands` — distinct `fin_items.brand_name` values
+  - `get_all_products` — distinct `(fin_items.name, fin_items.brand_name)` pairs; optional `search` / `brand` / `merchant` filters
+- `DiscoveryRepository` (`src/repositories/discovery.repository.ts`) — read-only repository backing the discovery tools. Filters out NULL and whitespace-only values, **excludes future-dated transactions** (`fin.date <= datetime('now')`) so scheduled/recurring rows like rent and subscriptions don't dominate the recency-ordered view, and supports optional case-insensitive substring search
+- `src/repositories/pagination.ts` — shared `DEFAULT_USER_ID = 1`, `DEFAULT_LIMIT = 50`, `MAX_LIMIT = 500`, and `clampLimit()` consumed by both `FinItemsRepository` and `DiscoveryRepository` (no longer cross-imported between the two repos)
+- Shared `McpTool` interface and `runTool` helper (`src/mcp/tools/types.ts`) so both tool families can register into a single dispatch map
+- Discovery zod schemas in `src/mcp/schemas.ts`
+- Smoke-test coverage for every discovery method in `src/scripts/mcp-smoke.ts` (run via `yarn test:mcp`)
+- SQL-level verification for every discovery query in `scripts/verify-mcp-sql.py`
+
+### Changed
+- `buildFinItemsTools()` now takes a `FinItemsRepository` argument (was zero-arg) and pre-binds it into each tool's handler closure. Internal refactor — no observable change to MCP clients
+- `runTool()` signature changed from `(tool, repo, input)` to `(tool, input)` for the same reason; lives in `src/mcp/tools/types.ts` (re-exported from `tools/fin-items.ts` for back-compat with any in-repo imports)
+- The 5 existing `query_fin_items_by_*` tool descriptions now point at the matching `get_all_*` tool as a "Tip" so AI clients discover the canonical-value workflow at `tools/list` time
+- Bumped `package.json` version and `SERVER_VERSION` to 1.10.0
+
+### Notes on backwards compatibility
+- Strictly additive on the MCP wire: 6 new tools, no existing tool's name / required fields / result shape changed. Per the policy in `docs/mcp-server.md`, this is a **minor** version bump
+- Recency ordering uses `MAX(fin.date)` (transaction date, not insert time). If old receipts are ever backfilled with the newer extractor, those values will look historical even when freshly normalized. The doc calls this out; a future `created_at` column on `fin` would resolve it without changing the tool surface
+- The future-date filter compares `fin.date` lexicographically against `datetime('now')`. Because `fin.date` carries two formats (legacy `YYYY-MM-DD HH:MM:SS` and ISO `YYYY-MM-DDTHH:MM:SS.000Z`), a same-day ISO row could be misclassified as future (ASCII `T` > space). Day-boundary comparisons are correct, which covers the common case (excluding 2029-dated scheduled transactions)
+
 ## [1.9.0] - 2026-05-09
 
 ### Added
