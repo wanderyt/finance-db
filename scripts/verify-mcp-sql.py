@@ -118,3 +118,160 @@ rows = run(
     (USER_ID, '%盒马%', 500),
 )
 print(f"  (repository's MAX_LIMIT=500 would cap requests at this size)")
+
+
+# =============================================================================
+# Discovery queries (get_all_*) — exercise the SQL DiscoveryRepository emits.
+# =============================================================================
+
+def run_distinct(label, sql, params, limit=10):
+    print(f"\n=== {label} ===")
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(sql, params).fetchall()
+    print(f"  rows: {len(rows)}")
+    for i, r in enumerate(rows[:5]):
+        print(f"  [{i}] value={r[0]!r}  count={r[1]}  last_seen={r[2]}")
+    if len(rows) > 5:
+        print(f"  …(+{len(rows) - 5} more)")
+    con.close()
+    return rows
+
+
+# Generic distinct-value SQL over a column on `fin`.
+# Mirrors DiscoveryRepository.listFinColumn():
+#   filter NULL / blank, exclude future-dated rows (scheduled/recurring),
+#   optional substring search, GROUP BY, ORDER BY MAX(date) DESC,
+#   COUNT(*) DESC, value ASC.
+def fin_distinct_sql(column, search=False, extra_where=""):
+    where = (
+        f"f.user_id = ? AND f.date <= datetime('now') "
+        f"AND {column} IS NOT NULL AND TRIM({column}) != ''"
+    )
+    if extra_where:
+        where += f" AND {extra_where}"
+    if search:
+        where += f" AND LOWER({column}) LIKE LOWER(?)"
+    return f"""
+        SELECT {column} AS value, COUNT(*) AS cnt, MAX(f.date) AS last_seen
+        FROM fin f
+        WHERE {where}
+        GROUP BY {column}
+        ORDER BY MAX(f.date) DESC, COUNT(*) DESC, {column} ASC
+        LIMIT ? OFFSET ?
+    """
+
+
+# 6. get_all_merchants — top 10 by recency
+run_distinct(
+    "get_all_merchants (top 10 by recency)",
+    fin_distinct_sql("f.merchant"),
+    (USER_ID, 10, 0),
+)
+
+# 6b. get_all_merchants with search="costco"
+run_distinct(
+    'get_all_merchants search="costco"',
+    fin_distinct_sql("f.merchant", search=True),
+    (USER_ID, '%costco%', 10, 0),
+)
+
+# 7. get_all_cities — top 10 by recency
+run_distinct(
+    "get_all_cities (top 10)",
+    fin_distinct_sql("f.city"),
+    (USER_ID, 10, 0),
+)
+
+# 8. get_all_categories — all, ordered by recency
+run_distinct(
+    "get_all_categories (top 50)",
+    fin_distinct_sql("f.category"),
+    (USER_ID, 50, 0),
+)
+
+# 9a. get_all_subcategories — global
+run_distinct(
+    "get_all_subcategories (global, top 10)",
+    fin_distinct_sql("f.subcategory"),
+    (USER_ID, 10, 0),
+)
+
+# 9b. get_all_subcategories scoped to category=生活
+run_distinct(
+    "get_all_subcategories scoped to category=生活",
+    fin_distinct_sql("f.subcategory", extra_where="f.category = ?"),
+    (USER_ID, '生活', 10, 0),
+)
+
+# 10. get_all_brands — joined to fin so last_seen reflects fin.date
+run_distinct(
+    "get_all_brands (top 10)",
+    """
+        SELECT fi.brand_name AS value, COUNT(*) AS cnt, MAX(f.date) AS last_seen
+        FROM fin_items fi
+        INNER JOIN fin f ON f.fin_id = fi.fin_id
+        WHERE f.user_id = ?
+          AND f.date <= datetime('now')
+          AND fi.brand_name IS NOT NULL
+          AND TRIM(fi.brand_name) != ''
+        GROUP BY fi.brand_name
+        ORDER BY MAX(f.date) DESC, COUNT(*) DESC, fi.brand_name ASC
+        LIMIT ? OFFSET ?
+    """,
+    (USER_ID, 10, 0),
+)
+
+
+def run_products(label, sql, params):
+    print(f"\n=== {label} ===")
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    rows = con.execute(sql, params).fetchall()
+    print(f"  rows: {len(rows)}")
+    for i, r in enumerate(rows[:5]):
+        brand = 'NULL' if r['brand'] is None else repr(r['brand'])
+        print(f"  [{i}] name={r['name']!r}  brand={brand}  count={r['cnt']}  last_seen={r['last_seen']}")
+    if len(rows) > 5:
+        print(f"  …(+{len(rows) - 5} more)")
+    con.close()
+
+
+# 11a. get_all_products — top 10 by recency
+run_products(
+    "get_all_products (top 10 by recency)",
+    """
+        SELECT fi.name AS name, fi.brand_name AS brand,
+               COUNT(*) AS cnt, MAX(f.date) AS last_seen
+        FROM fin_items fi
+        INNER JOIN fin f ON f.fin_id = fi.fin_id
+        WHERE f.user_id = ?
+          AND f.date <= datetime('now')
+          AND fi.name IS NOT NULL
+          AND TRIM(fi.name) != ''
+        GROUP BY fi.name, fi.brand_name
+        ORDER BY MAX(f.date) DESC, COUNT(*) DESC, fi.name ASC
+        LIMIT ? OFFSET ?
+    """,
+    (USER_ID, 10, 0),
+)
+
+# 11b. get_all_products filtered by merchant=盒马
+run_products(
+    "get_all_products filtered by merchant=盒马",
+    """
+        SELECT fi.name AS name, fi.brand_name AS brand,
+               COUNT(*) AS cnt, MAX(f.date) AS last_seen
+        FROM fin_items fi
+        INNER JOIN fin f ON f.fin_id = fi.fin_id
+        WHERE f.user_id = ?
+          AND f.date <= datetime('now')
+          AND fi.name IS NOT NULL
+          AND TRIM(fi.name) != ''
+          AND LOWER(f.merchant) LIKE LOWER(?)
+        GROUP BY fi.name, fi.brand_name
+        ORDER BY MAX(f.date) DESC, COUNT(*) DESC, fi.name ASC
+        LIMIT ? OFFSET ?
+    """,
+    (USER_ID, '%盒马%', 5, 0),
+)

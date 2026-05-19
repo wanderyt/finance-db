@@ -32,10 +32,13 @@ import { z } from 'zod';
 import { mcpConfig } from './config.js';
 import { mcpLogger } from './logger.js';
 import { FinItemsRepository } from '../repositories/fin-items.repository.js';
-import { buildFinItemsTools, runTool } from './tools/fin-items.js';
+import { DiscoveryRepository } from '../repositories/discovery.repository.js';
+import { buildFinItemsTools } from './tools/fin-items.js';
+import { buildDiscoveryTools } from './tools/discovery.js';
+import { runTool } from './tools/types.js';
 
 const SERVER_NAME = 'finance-db';
-const SERVER_VERSION = '1.9.0';
+const SERVER_VERSION = '1.10.0';
 
 async function main(): Promise<void> {
   mcpLogger.info('Starting finance-db MCP server', {
@@ -47,9 +50,13 @@ async function main(): Promise<void> {
   const sqlite = new Database(mcpConfig.databaseUrl, { readonly: true });
   sqlite.pragma('foreign_keys = ON');
   const db = drizzle(sqlite);
-  const repo = new FinItemsRepository(db);
+  const finItemsRepo = new FinItemsRepository(db);
+  const discoveryRepo = new DiscoveryRepository(db);
 
-  const tools = buildFinItemsTools();
+  const tools = [
+    ...buildFinItemsTools(finItemsRepo),
+    ...buildDiscoveryTools(discoveryRepo),
+  ];
   const toolsByName = new Map(tools.map((t) => [t.name, t] as const));
 
   const server = new Server(
@@ -75,7 +82,7 @@ async function main(): Promise<void> {
     }
 
     try {
-      const rows = runTool(tool, repo, args ?? {});
+      const rows = runTool(tool, args ?? {});
       return {
         content: [
           {

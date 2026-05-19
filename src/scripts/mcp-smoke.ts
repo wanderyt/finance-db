@@ -1,10 +1,12 @@
 /**
- * Smoke test for FinItemsRepository.
+ * Smoke test for the MCP repositories.
  *
- * Calls each of the 5 query methods directly against ./db/finance.db with
- * realistic arguments and prints a one-line summary plus the first row.
+ * Calls each repository method directly against ./db/finance.db with realistic
+ * arguments and prints a one-line summary plus the first row. Covers both:
+ *   - FinItemsRepository (5 join-aware query methods)
+ *   - DiscoveryRepository (6 distinct-value / product methods)
  *
- * Run: yarn tsx src/scripts/mcp-smoke.ts
+ * Run: yarn tsx src/scripts/mcp-smoke.ts (or `yarn test:mcp`)
  *
  * This bypasses the MCP layer entirely — it's a data-layer sanity check. The
  * MCP server itself is just JSON-RPC plumbing on top of these methods.
@@ -12,6 +14,11 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { FinItemsRepository, type FinItemWithFin } from '../repositories/fin-items.repository.js';
+import {
+  DiscoveryRepository,
+  type DistinctValueRow,
+  type ProductRow,
+} from '../repositories/discovery.repository.js';
 
 const DB_PATH = process.env.DATABASE_URL ?? './db/finance.db';
 
@@ -25,11 +32,34 @@ function summarize(label: string, rows: FinItemWithFin[]): void {
   }
 }
 
+function summarizeDistinct(label: string, rows: DistinctValueRow[]): void {
+  console.log(`\n=== ${label} ===`);
+  console.log(`  rows: ${rows.length}`);
+  rows.slice(0, 5).forEach((r, i) => {
+    console.log(`  [${i}] "${r.value}"  count=${r.count}  last_seen=${r.lastSeen}`);
+  });
+  if (rows.length > 5) console.log(`  …(+${rows.length - 5} more)`);
+}
+
+function summarizeProducts(label: string, rows: ProductRow[]): void {
+  console.log(`\n=== ${label} ===`);
+  console.log(`  rows: ${rows.length}`);
+  rows.slice(0, 5).forEach((r, i) => {
+    console.log(`  [${i}] name="${r.name}"  brand=${r.brand === null ? '(null)' : `"${r.brand}"`}  count=${r.count}  last_seen=${r.lastSeen}`);
+  });
+  if (rows.length > 5) console.log(`  …(+${rows.length - 5} more)`);
+}
+
 async function main() {
   const sqlite = new Database(DB_PATH, { readonly: true });
   sqlite.pragma('foreign_keys = ON');
   const db = drizzle(sqlite);
   const repo = new FinItemsRepository(db);
+  const discovery = new DiscoveryRepository(db);
+
+  // -------------------------------------------------------------------------
+  // FinItemsRepository — the 5 query methods
+  // -------------------------------------------------------------------------
 
   // 1. By merchant — pick a merchant we know exists from the data inspection
   summarize('merchant=盒马 (substring)', repo.findByMerchant('盒马', { limit: 3 }));
@@ -78,6 +108,26 @@ async function main() {
   // Limit clamp
   const huge = repo.findByMerchant('盒马', { limit: 99999 });
   console.log(`\n=== limit clamp ===\n  asked 99999, got ${huge.length} (capped at MAX_LIMIT=500)`);
+
+  // -------------------------------------------------------------------------
+  // DiscoveryRepository — the 6 distinct-value / product methods
+  // -------------------------------------------------------------------------
+
+  console.log('\n\n============================================================');
+  console.log('  DiscoveryRepository');
+  console.log('============================================================');
+
+  // Ordered by recency: most recent values appear first
+  summarizeDistinct('merchants (top 10 by recency)', discovery.listMerchants({ limit: 10 }));
+  summarizeDistinct('merchants search="costco"', discovery.listMerchants({ search: 'costco', limit: 10 }));
+  summarizeDistinct('cities (top 10 by recency)', discovery.listCities({ limit: 10 }));
+  summarizeDistinct('categories (all, ordered by recency)', discovery.listCategories({ limit: 50 }));
+  summarizeDistinct('subcategories (global, top 10)', discovery.listSubcategories({ limit: 10 }));
+  summarizeDistinct('subcategories scoped to category=生活', discovery.listSubcategories({ category: '生活', limit: 10 }));
+  summarizeDistinct('brands (top 10)', discovery.listBrands({ limit: 10 }));
+  summarizeProducts('products (top 10 by recency)', discovery.listProducts({ limit: 10 }));
+  summarizeProducts('products search="奶"', discovery.listProducts({ search: '奶', limit: 10 }));
+  summarizeProducts('products filtered by merchant=盒马', discovery.listProducts({ merchant: '盒马', limit: 5 }));
 
   sqlite.close();
 }
