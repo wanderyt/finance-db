@@ -1,27 +1,14 @@
-import { eq, and, desc, asc, sql, like, or, type SQL } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, or, type SQL } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { fin, finItems, type Fin, type FinItem } from '../db/schema.js';
+import { DEFAULT_USER_ID, DEFAULT_LIMIT, MAX_LIMIT, clampLimit } from './pagination.js';
 
-// Note: this repository deliberately avoids importing the global winston
-// logger (`src/utils/logger.ts`) because that logger transitively requires
-// the full env validation (DATABASE_PATH, BACKUP_PATH, BACKUP_SCHEDULE, ...).
-// The MCP server only needs DATABASE_URL, so we log errors via console.error
-// which is also stdio-safe (goes to stderr, won't corrupt the JSON-RPC stream
-// flowing over stdout).
+// Avoids importing the global winston logger — that logger transitively
+// requires full env validation (BACKUP_PATH etc.) which the MCP server
+// doesn't have. console.error is stdio-safe (goes to stderr, not the
+// JSON-RPC stream on stdout).
 
-/**
- * Default user ID. The database is single-user (user_id = 1 = "wanderyt") and
- * the schema has no provision for multi-tenancy beyond the column. All queries
- * issued by the MCP server are scoped to this user.
- */
-export const DEFAULT_USER_ID = 1;
-
-/**
- * Maximum and default page sizes for list queries. The MCP transport returns
- * results inline so we cap the response to keep payloads tractable.
- */
-export const DEFAULT_LIMIT = 50;
-export const MAX_LIMIT = 500;
+export { DEFAULT_USER_ID, DEFAULT_LIMIT, MAX_LIMIT };
 
 export interface FinItemsQueryOptions {
   /** Override the default user_id (1). */
@@ -322,12 +309,6 @@ export class FinItemsRepository {
   }
 }
 
-function clampLimit(limit: number | undefined): number {
-  if (limit == null) return DEFAULT_LIMIT;
-  if (!Number.isFinite(limit) || limit <= 0) return DEFAULT_LIMIT;
-  return Math.min(Math.floor(limit), MAX_LIMIT);
-}
-
 function reshapeRow(row: any): FinItemWithFin {
   return {
     itemId: row.itemId,
@@ -365,6 +346,3 @@ function reshapeRow(row: any): FinItemWithFin {
   };
 }
 
-// `like` is imported for completeness (other repositories in this codebase
-// use it directly); we route through `sql` for the case-insensitive variant.
-void like;

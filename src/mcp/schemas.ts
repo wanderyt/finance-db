@@ -1,11 +1,5 @@
-/**
- * Zod input schemas for the 5 MCP tools.
- *
- * Each schema validates the JSON arguments coming in via the MCP `tools/call`
- * request and produces a typed result that's safe to hand to the repository.
- */
 import { z } from 'zod';
-import { DEFAULT_LIMIT, MAX_LIMIT } from '../repositories/fin-items.repository.js';
+import { DEFAULT_LIMIT, MAX_LIMIT } from '../repositories/pagination.js';
 
 const limit = z
   .number()
@@ -106,3 +100,56 @@ export const productSchema = z
     message: 'At least one of `name` or `brand` must be provided.',
   });
 export type ProductInput = z.infer<typeof productSchema>;
+
+// --- Discovery tools (get_all_*) ----------------------------------------
+
+const discoverySearch = z
+  .string()
+  .min(1)
+  .optional()
+  .describe('Optional case-insensitive substring filter on the target field.');
+
+const simpleDiscoverySchema = z.object({
+  search: discoverySearch,
+  limit,
+  offset,
+});
+export type SimpleDiscoveryInput = z.infer<typeof simpleDiscoverySchema>;
+
+export const merchantsListSchema = simpleDiscoverySchema;
+export const citiesListSchema = simpleDiscoverySchema;
+export const categoriesListSchema = simpleDiscoverySchema;
+export const brandsListSchema = simpleDiscoverySchema;
+
+export const subcategoriesListSchema = z.object({
+  category: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Scope to subcategories under a specific category (e.g. list subcategories used under "周末").'),
+  search: discoverySearch,
+  limit,
+  offset,
+});
+export type SubcategoriesListInput = z.infer<typeof subcategoriesListSchema>;
+
+export const productsListSchema = z.object({
+  search: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Substring filter on product name (fin_items.name).'),
+  brand: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Substring filter on brand (fin_items.brand_name).'),
+  merchant: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Substring filter on the parent transaction\'s merchant (fin.merchant).'),
+  limit,
+  offset,
+});
+export type ProductsListInput = z.infer<typeof productsListSchema>;

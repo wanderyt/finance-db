@@ -193,19 +193,25 @@ yarn db:studio        # Launch Drizzle Studio
 
 ## 8. Configuration
 
-All configuration is via environment variables (`.env` file):
+Configuration is via environment variables, normally supplied through a `.env` file at the project root. Every variable has a default (matching `.env.example`), so a missing `.env` doesn't block startup — you only need to set a variable to override its default.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `./db/finance.db` | Path to SQLite database |
-| `BACKUP_PATH` | `./backups` | Backup storage directory |
+| `DATABASE_PATH` | `./db` | Directory containing the database |
+| `DATABASES_CONFIG` | `./databases.config.json` | Multi-DB Studio registry |
+| `BACKUP_PATH` | `./db/backups` | Backup storage directory |
 | `BACKUP_SCHEDULE` | `0 0 * * 0` | Cron: weekly Sunday midnight |
 | `BACKUP_RETENTION_DAYS` | `90` | Cleanup threshold |
+| `STUDIO_HOST` | `0.0.0.0` | Drizzle Studio bind address |
+| `STUDIO_PORT` | `4983` | Drizzle Studio default port |
 | `POCKET_MONEY_ENABLED` | `true` | Enable/disable allowance job |
 | `POCKET_MONEY_SCHEDULE` | `0 9 * * 0` | Cron: weekly Sunday 9 AM |
 | `POCKET_MONEY_WEEKLY_AMOUNT` | `500` | Weekly amount in cents ($5.00) |
 | `NODE_ENV` | `development` | Environment mode |
 | `LOG_LEVEL` | `info` | Winston log level |
+
+The MCP server (`src/mcp/server.ts`) does not use the global env validator — it has its own minimal config in `src/mcp/config.ts` that reads only `DATABASE_URL` (with the same default) and `MCP_LOG_LEVEL`. This keeps the MCP server spawnable by external clients (openclaw, Claude Desktop) with no `.env` file and no extra envs. See [docs/mcp-server.md → Configuration](mcp-server.md).
 
 ## 9. Design Decisions
 
