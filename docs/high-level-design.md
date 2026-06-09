@@ -172,6 +172,15 @@ The system supports multiple SQLite databases via `databases.config.json`, each 
 
 The primary deployment target is a home NAS running Docker. The `docker-compose.yml` uses a pre-built image (`wanderyt/finance-db`) with volume mounts for the database and backup directories.
 
+Image publishing is automated through `.github/workflows/docker-publish.yml`. When a PR is merged into `main`, GitHub Actions builds `Dockerfile` and pushes both Docker Hub tags:
+
+- `wanderyt/finance-db:<package-json-version>`
+- `wanderyt/finance-db:latest`
+
+The workflow logs in as Docker Hub user `wanderyt` using the repository secret `DOCKERHUB_TOKEN`. The version tag is read directly from `package.json`; with the current package version, the versioned image tag is `wanderyt/finance-db:1.11.0`.
+
+The `.dockerignore` file excludes local databases, backups, env files, dependencies, and build output from Docker build contexts so published images contain only application/runtime assets.
+
 Key volume mounts:
 - `./data` (host) -> `/app/db` (container) — database persistence
 - Backups stored within the database directory structure

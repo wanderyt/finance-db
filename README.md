@@ -349,6 +349,28 @@ See the comprehensive [Backup Testing Guide](docs/backup-testing-guide.md) for:
 
 ## Docker Deployment
 
+### Automated Docker Hub Publishing
+
+The repository includes `.github/workflows/docker-publish.yml`.
+
+When a PR is merged into `main`, GitHub Actions builds the Docker image from `Dockerfile` and pushes both tags to Docker Hub:
+
+- `wanderyt/finance-db:<package-json-version>`
+- `wanderyt/finance-db:latest`
+
+For the current `package.json`, that means:
+
+- `wanderyt/finance-db:1.11.0`
+- `wanderyt/finance-db:latest`
+
+Required one-time setup in GitHub Actions secrets:
+
+- `DOCKERHUB_TOKEN` = a Docker Hub access token for user `wanderyt`
+
+The Docker build context excludes local databases, backups, env files, dependencies, and build output via `.dockerignore`.
+
+You can also run the workflow manually from GitHub's **Actions** tab using **Build and Publish Docker Image**.
+
 ### Build and Start
 
 ```bash
