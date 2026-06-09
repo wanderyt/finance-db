@@ -1,0 +1,36 @@
+# Git
+.git
+.github
+.gitignore
+
+# Dependencies and build output
+node_modules
+dist
+coverage
+*.tsbuildinfo
+
+# Local environment and logs
+.env
+.env.*
+*.log
+logs
+
+# Local database and backup data
+db
+data
+backups
+
+# Generated runtime config
+configs
+
+# Local/editor files
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+
+# Documentation not required in the runtime image
+README.md
+CHANGELOG.md
+docs

@@ -353,6 +353,8 @@ main();
 
 ### Phase 6: Docker Support
 
+Current deployment uses a pre-built Docker Hub image (`wanderyt/finance-db`) rather than building on the NAS. `.github/workflows/docker-publish.yml` publishes that image automatically after pushes to `main`, tagging it with both the `package.json` version and `latest`.
+
 #### 13. Dockerfile
 **What**: Container image for production deployment
 **Files**: `Dockerfile`
