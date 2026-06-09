@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-06-08
+
+### Added
+- GitHub Actions Docker Hub publishing workflow (`.github/workflows/docker-publish.yml`) that builds `Dockerfile` after merges to `main` (or on manual dispatch) and pushes both `wanderyt/finance-db:<package-json-version>` and `wanderyt/finance-db:latest`. The versioned tag is read from `package.json`, so this release publishes `wanderyt/finance-db:1.11.0`. Requires the `DOCKERHUB_TOKEN` repository secret (Docker Hub access token for user `wanderyt`)
+- `.dockerignore` exclusions so local SQLite databases, backups, env files, dependencies, and build output are never sent in Docker build contexts
+
 ## [1.10.1] - 2026-05-18
 
 ### Changed (data only — no code or API change)
