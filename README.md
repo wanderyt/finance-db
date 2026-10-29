@@ -16,18 +16,23 @@ A TypeScript-based SQLite database operations service with Drizzle ORM, Drizzle 
 
 ## Database Schema
 
-The service manages a comprehensive financial tracking database with 10 tables:
+The service manages a comprehensive financial tracking database with the following tables:
 
 - **users**: User accounts and authentication
 - **categories**: Income/expense categories and subcategories
 - **fin**: Main financial transactions (multi-currency: CAD, USD, CNY)
 - **fin_items**: Line items for detailed transaction breakdowns
+- **fin_photos**: Product photo metadata linked to transactions
 - **fin_tags**: Tags for organizing transactions
 - **fx_snapshots**: Foreign exchange rate snapshots
 - **persons**: People associated with transactions
 - **receipts**: Receipt file tracking with SHA256 hashing
 - **schedule_rules**: Recurring transaction rules
 - **tags**: Tag definitions
+
+Product photo setup, backup storage, and restore instructions are in [Product Photos](docs/product-photos-feature.md).
+Apply `migrations/005_add_fin_photos.sql` once per physical finance database.
+Both applications must use the same database and sibling `uploads` directory.
 
 ## Quick Start
 
@@ -299,10 +304,18 @@ Create a backup immediately:
 yarn backup:now
 ```
 
-Backups are stored in the `backups/` directory with timestamped filenames:
+Backups use `BACKUP_PATH`, which defaults to `./db/backups`.
+Each completed backup contains a SQLite file and a matching uploads directory:
+
+```text
+sqlite-backup-<timestamp>-<uuid>.db
+sqlite-backup-<timestamp>-<uuid>.db.uploads/
 ```
-sqlite-backup-2026-01-25-143022.db
-```
+
+Scheduled backups also include the database ID in the filename.
+The uploads directory contains receipts and product photos from beside the source database.
+A backup fails if its SQLite snapshot references an image that the uploads copy does not contain.
+See [Product Photos](docs/product-photos-feature.md) for consistency limits and storage requirements.
 
 ### Backup Cleanup
 
@@ -314,14 +327,11 @@ yarn backup:cleanup
 
 ### Restoring from Backup
 
-To restore from a backup:
-
-1. Stop the service
-2. Copy the backup file over the main database:
-```bash
-cp backups/sqlite-backup-2026-01-25-143022.db db/finance.db
-```
-3. Restart the service
+Restore the SQLite file and its matching `.db.uploads` directory together.
+Stop every process that accesses the database first, including `new-finance`, MCP clients, and Drizzle Studio.
+Preserve the current database, SQLite sidecar files, and uploads before replacement.
+Follow the [restore procedure](docs/product-photos-feature.md#restore-a-backup) for the exact steps.
+Older backups contain SQLite only and require a separate image backup.
 
 ### Testing Backups
 

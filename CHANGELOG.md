@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-10-28
+
+### Added
+- Add the `fin_photos` schema, types, and an idempotent SQL patch for product photos.
+- Let `create_fin_record` attach up to six product photos through `photo_paths`.
+- Validate product photo formats and the 5 MiB file limit before sending uploads.
+- Add isolated tests for the schema, backups, restore, cleanup, and MCP uploads.
+
+### Changed
+- Save the complete sibling `uploads` directory with each manual or scheduled SQLite backup.
+- Verify referenced receipt and product photo files before publishing a backup.
+- Remove each expired backup's uploads directory during retention cleanup.
+- Document database migration, shared storage, and restore of database and image backups.
+
+## [1.12.0] - 2026-07-20
+
+### Added
+- 3 MCP **write / receipt-intake tools** (`src/mcp/tools/fin-write.ts`) so an agent (Todd) can turn a receipt image into a saved fin record with a human-in-the-loop review step. These are thin HTTP clients of the `new-finance` app — they do **not** touch the read-only SQLite handle; the app owns the Gemini receipt analysis, FX conversion, and the actual writes:
+  - `analyze_receipt({ image_path })` — POSTs the image to `new-finance` `POST /api/receipts/analyze`; returns the extracted structured data (merchant, city, date, currency, totals, line items, suggested category — all in cents). No write.
+  - `build_fin_record({ analysis, overrides? })` — pure assembly (no HTTP/DB): maps an `analyze_receipt` result into a complete `CreateFinRequest` payload and returns `{ record, summary }`, where `summary` is a dollars recap to show the user for approval. Normalizes the naive Gemini date to ISO-8601 UTC.
+  - `create_fin_record({ record, image_path? })` — POSTs the confirmed payload to `new-finance` `POST /api/fin/create`; returns the created record (finId, all four currency amounts, fxId).
+- MCP tool handlers may now be async (`src/mcp/tools/types.ts`) — the write tools await HTTP; existing sync read tools are unchanged.
+- MCP config gains `financeApiUrl` (`FINANCE_API_URL`, default `http://localhost:3000`) and `financeApiKey` (`FINANCE_MCP_KEY`), used only by the write tools to authenticate to `new-finance` via an `X-Api-Key` header.
+
+### Notes
+- The write tools require the `new-finance` app to be running and reachable at `FINANCE_API_URL`, and `FINANCE_MCP_KEY` to match the app's env. They error clearly if the key is unset.
+- Requires Node ≥18 for global `fetch`/`FormData`/`Blob`.
+
 ## [1.11.0] - 2026-06-08
 
 ### Added

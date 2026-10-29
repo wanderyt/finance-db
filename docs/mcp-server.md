@@ -1,15 +1,16 @@
 # MCP Server
 
-Read-only [Model Context Protocol](https://modelcontextprotocol.io) server that exposes finance-db queries to MCP clients (e.g. David's `openclaw` project, Claude Desktop, any other MCP host).
+[Model Context Protocol](https://modelcontextprotocol.io) server that exposes finance-db queries to MCP clients (e.g. David's `openclaw` project, Claude Desktop, any other MCP host). The query/discovery tools are **read-only** (SQLite opened `{ readonly: true }`); a small set of **write / receipt-intake tools** proxy to the `new-finance` app over HTTP without touching the DB handle (see below).
 
 The server is colocated in this repo so it shares the Drizzle schema and database connection — no duplication, no separate process for the data layer.
 
 ## Tools
 
-The server exposes 11 tools across two families:
+The server exposes 14 tools across three families:
 
 - **Query tools** (5) — `query_fin_items_by_*`, return joined `fin_items` + parent transaction rows
 - **Discovery tools** (6) — `get_all_*`, return the value space (canonical strings + frequency + recency) so AI clients can pick the right argument to pass to the query tools
+- **Write / receipt-intake tools** (3) — `analyze_receipt`, `build_fin_record`, `create_fin_record`; HTTP clients of the `new-finance` app for the receipt → review → save flow
 
 ### Query tools
 
@@ -78,9 +79,48 @@ All discovery tools sort by `lastSeen DESC, count DESC, value ASC`. Recency lead
 
 `get_all_categories` deliberately returns only `fin.category` values — not the line-item-level `fin_items.category` overrides — even though `query_fin_items_by_category` can match either via `scope`. The reason: transaction-level categories are the primary, canonical taxonomy; the line-item column is a per-row override and would muddle the discovery view if unioned in. If you ever need to surface item-level categories, add a sibling tool rather than changing the existing one (breaking change).
 
+### Write / receipt-intake tools
+
+These three tools let an agent (Todd) turn a receipt image into a saved fin record with a human-in-the-loop review step. They are **thin HTTP clients of the `new-finance` app** — they do not touch the read-only SQLite handle. `new-finance` owns the Gemini receipt analysis, FX conversion, and the actual writes. Each returns a **single row** (`count: 1`).
+
+| Tool | Purpose | Required input | Optional input |
+|------|---------|----------------|----------------|
+| `analyze_receipt` | Extract structured data from a receipt image (`POST /api/receipts/analyze`). No write. | `image_path: string` (absolute local path) | — |
+| `build_fin_record` | Pure assembly: map an `analyze_receipt` result into a complete `CreateFinRequest` and return `{ record, summary }` for user review. No HTTP/DB. | `analysis: object` (the `analyze_receipt` result) | `overrides: object` (user corrections: merchant/date/category/amount/currency/…) |
+| `create_fin_record` | Push the confirmed payload (`POST /api/fin/create`); computes FX, writes `fin` + `fin_items`, optionally attaches the receipt and product photos. | `record: object` (`CreateFinRequest`: `date` ISO-8601 UTC, `originalCurrency` CAD/USD/CNY, `originalAmountCents`, …) | `image_path: string` (receipt), `photo_paths: string[]` (up to six product photos) |
+
+Intended sequence: `analyze_receipt` → `build_fin_record` → show `summary` to the user → on approval → `create_fin_record`. All amounts are in **cents**. `build_fin_record` normalizes the naive Gemini date to ISO-8601 UTC (appends `Z`, or `T12:00:00Z` for a bare date). These tools require the `new-finance` app to be running at `FINANCE_API_URL` and `FINANCE_MCP_KEY` to match the app's env; they error clearly if the key is unset.
+
+### Product photos
+
+`create_fin_record` accepts optional `photo_paths` beside the existing receipt `image_path`.
+Each path must be absolute and accessible from the MCP server.
+Use JPEG, PNG, or WebP, with at most 5 MiB per file and six files per record.
+The MCP server validates the paths, formats, and sizes before it sends the request.
+The website API validates image contents and controls storage, filenames, ownership, and deletion.
+
+```json
+{
+  "record": {
+    "date": "2026-10-28T12:00:00Z",
+    "originalCurrency": "CAD",
+    "originalAmountCents": 12999,
+    "merchant": "Costco"
+  },
+  "image_path": "/path/to/receipt.jpg",
+  "photo_paths": ["/path/to/shoes.jpg", "/path/to/label.png"]
+}
+```
+
+The MCP server sends `data`, optional `receipt`, and repeated `photos` fields as multipart form data.
+Requests without images retain the existing JSON format.
+Receipt-only requests retain their existing format.
+Product photos require the website release that supports `fin_photos`.
+The MCP tools do not yet retrieve photos or change photos on existing records.
+
 ### Result shape
 
-Each row is a `FinItemWithFin`:
+Each **query-tool** row is a `FinItemWithFin`:
 
 ```jsonc
 {
@@ -183,8 +223,10 @@ The MCP server has its own minimal config (`src/mcp/config.ts`) — independent 
 |----------|---------|---------|
 | `DATABASE_URL` | `./db/finance.db` | Path to the SQLite database (opened read-only) |
 | `MCP_LOG_LEVEL` | `info` (or `LOG_LEVEL` if set) | Log level for stderr logger: `error`, `warn`, `info`, `debug` |
+| `FINANCE_API_URL` | `http://localhost:3000` | Base URL of the `new-finance` app — used only by the write tools |
+| `FINANCE_MCP_KEY` | _(empty)_ | Shared secret sent as `X-Api-Key` to authenticate the write tools to `new-finance`. If unset, the write tools error clearly; read tools are unaffected |
 
-A `.env` file is loaded if present but is not required.
+A `.env` file is loaded if present but is not required. The write tools additionally require the `new-finance` app to be running and reachable at `FINANCE_API_URL`.
 
 ## Architecture
 
@@ -218,7 +260,7 @@ The MCP server speaks JSON-RPC over stdout, so anything written to stdout corrup
 
 ### Why read-only?
 
-The MCP server opens `finance.db` with `{ readonly: true }`. By design, it can only query — never mutate. Writes still go through the main app (Drizzle Studio, jobs, manual SQL).
+The MCP server opens `finance.db` with `{ readonly: true }`. The query/discovery tools can only read — never mutate — the SQLite handle. The write / receipt-intake tools (`analyze_receipt`, `build_fin_record`, `create_fin_record`) do not write to SQLite either: they proxy over HTTP to the `new-finance` app, which is the single owner of all mutations (FX conversion, `fin`/`fin_items` inserts, receipt storage). So the DB handle here stays strictly read-only; the app remains the sole writer.
 
 ## Files
 

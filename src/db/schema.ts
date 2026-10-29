@@ -123,6 +123,20 @@ export const finItems = sqliteTable('fin_items', {
   idxItemsPerson: index('idx_items_person').on(table.personId)
 }));
 
+// Product photos belong to their parent transaction.
+export const finPhotos = sqliteTable('fin_photos', {
+  photoId: integer('photo_id').primaryKey().notNull(),
+  finId: text('fin_id').notNull().references(() => fin.finId, { onDelete: 'cascade' }),
+  storageKey: text('storage_key').notNull().unique(),
+  originalName: text('original_name'),
+  mimeType: text('mime_type').notNull(),
+  sizeBytes: integer('size_bytes').notNull(),
+  sortOrder: integer('sort_order').notNull(),
+  uploadedAt: text('uploaded_at').notNull()
+}, (table) => ({
+  idxFinPhotosOrder: index('idx_fin_photos_order').on(table.finId, table.sortOrder, table.photoId)
+}));
+
 // Financial Transaction Tags junction table
 export const finTags = sqliteTable('fin_tags', {
   finId: text('fin_id').notNull().references(() => fin.finId, { onDelete: 'cascade' }),
@@ -199,6 +213,9 @@ export type NewFin = typeof fin.$inferInsert;
 
 export type FinItem = typeof finItems.$inferSelect;
 export type NewFinItem = typeof finItems.$inferInsert;
+
+export type FinPhoto = typeof finPhotos.$inferSelect;
+export type NewFinPhoto = typeof finPhotos.$inferInsert;
 
 export type FinTag = typeof finTags.$inferSelect;
 export type NewFinTag = typeof finTags.$inferInsert;
