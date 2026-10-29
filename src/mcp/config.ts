@@ -18,6 +18,17 @@ export interface McpConfig {
   databaseUrl: string;
   /** Log level for the MCP server's stderr logger. */
   logLevel: 'error' | 'warn' | 'info' | 'debug';
+  /**
+   * Base URL of the new-finance HTTP API (e.g. "http://localhost:3000").
+   * The write tools (analyze_receipt / build_fin_record / create_fin_record)
+   * are thin HTTP clients of that app. Read tools don't use this.
+   */
+  financeApiUrl: string;
+  /**
+   * Shared secret sent as `X-Api-Key` to authenticate the write tools against
+   * new-finance. Empty if not configured — write tools then error clearly.
+   */
+  financeApiKey: string;
 }
 
 function readLogLevel(raw: string | undefined): McpConfig['logLevel'] {
@@ -36,4 +47,6 @@ function readLogLevel(raw: string | undefined): McpConfig['logLevel'] {
 export const mcpConfig: McpConfig = {
   databaseUrl: resolve(process.env.DATABASE_URL ?? './db/finance.db'),
   logLevel: readLogLevel(process.env.MCP_LOG_LEVEL ?? process.env.LOG_LEVEL),
+  financeApiUrl: (process.env.FINANCE_API_URL ?? 'http://localhost:3000').replace(/\/+$/, ''),
+  financeApiKey: process.env.FINANCE_MCP_KEY ?? '',
 };

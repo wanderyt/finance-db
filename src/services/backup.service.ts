@@ -1,18 +1,15 @@
-import { promises as fs } from 'fs';
 import { readFileSync, existsSync } from 'fs';
 import { join, basename, resolve } from 'path';
-import Database from 'better-sqlite3';
-import { rawDb } from '../config/database.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import {
-  ensureDirectoryExists,
   listBackupFiles,
   getFileAge,
-  deleteFile,
   getFileSize,
   formatBytes
 } from '../utils/file.utils.js';
+
+import { createDatabaseBackup, deleteDatabaseBackup } from './database-backup.js';
 
 interface DatabaseConfig {
   id: string;
@@ -33,39 +30,7 @@ export class BackupService {
    * Create a timestamped backup of the database
    */
   static async createBackup(): Promise<string> {
-    try {
-      logger.info('Starting database backup...');
-
-      // Ensure backup directory exists
-      await ensureDirectoryExists(env.BACKUP_PATH);
-
-      // Generate backup filename with timestamp
-      const timestamp = new Date().toISOString()
-        .replace(/:/g, '')
-        .replace(/\..+/, '')
-        .replace('T', '-');
-      const backupFilename = `sqlite-backup-${timestamp}.db`;
-      const backupPath = join(env.BACKUP_PATH, backupFilename);
-
-      // Checkpoint WAL to ensure all changes are in the main database file
-      logger.debug('Performing WAL checkpoint...');
-      rawDb.pragma('wal_checkpoint(TRUNCATE)');
-
-      // Use better-sqlite3's backup API for online backup
-      logger.debug(`Creating backup: ${backupPath}`);
-      await rawDb.backup(backupPath);
-
-      // Verify backup was created
-      const backupSize = await getFileSize(backupPath);
-      logger.info(
-        `Backup created successfully: ${backupFilename} (${formatBytes(backupSize)})`
-      );
-
-      return backupPath;
-    } catch (error) {
-      logger.error('Failed to create backup', error);
-      throw error;
-    }
+    return this.createBackupForDatabase(undefined, env.DATABASE_URL);
   }
 
   /**
@@ -91,7 +56,7 @@ export class BackupService {
         const age = await getFileAge(backupFile);
 
         if (age > env.BACKUP_RETENTION_DAYS) {
-          await deleteFile(backupFile);
+          await deleteDatabaseBackup(backupFile);
           logger.info(
             `Deleted old backup: ${basename(backupFile)} (${Math.floor(age)} days old)`
           );
@@ -159,48 +124,14 @@ export class BackupService {
   /**
    * Create a backup for a specific database
    */
-  static async createBackupForDatabase(dbId: string, dbPath: string): Promise<string> {
+  static async createBackupForDatabase(dbId: string | undefined, dbPath: string): Promise<string> {
     try {
-      logger.info(`Starting backup for database: ${dbId}...`);
-
-      // Ensure backup directory exists
-      await ensureDirectoryExists(env.BACKUP_PATH);
-
-      // Generate backup filename with database ID and timestamp
-      const timestamp = new Date().toISOString()
-        .replace(/:/g, '')
-        .replace(/\..+/, '')
-        .replace('T', '-');
-      const backupFilename = `sqlite-backup-${dbId}-${timestamp}.db`;
-      const backupPath = join(env.BACKUP_PATH, backupFilename);
-
-      // Open connection to the database
-      const dbAbsolutePath = resolve(dbPath);
-      if (!existsSync(dbAbsolutePath)) {
-        logger.warn(`Database file does not exist: ${dbAbsolutePath}`);
-        return '';
-      }
-
-      const db = new Database(dbAbsolutePath, { readonly: true });
-
-      try {
-        // Use better-sqlite3's backup API for online backup
-        // No WAL checkpoint needed — backup() handles consistency
-        logger.debug(`Creating backup: ${backupPath}`);
-        await db.backup(backupPath);
-
-        // Verify backup was created
-        const backupSize = await getFileSize(backupPath);
-        logger.info(
-          `Backup created for ${dbId}: ${backupFilename} (${formatBytes(backupSize)})`
-        );
-
-        return backupPath;
-      } finally {
-        db.close();
-      }
+      const backupPath = await createDatabaseBackup(dbPath, env.BACKUP_PATH, dbId);
+      const backupSize = await getFileSize(backupPath);
+      logger.info(`Backup created: ${basename(backupPath)} (${formatBytes(backupSize)} SQLite, plus uploads)`);
+      return backupPath;
     } catch (error) {
-      logger.error(`Failed to create backup for ${dbId}`, error);
+      logger.error(`Failed to create backup for ${dbId ?? 'default database'}`, error);
       throw error;
     }
   }
@@ -260,7 +191,7 @@ export class BackupService {
         const age = await getFileAge(backupFile);
 
         if (age > env.BACKUP_RETENTION_DAYS) {
-          await deleteFile(backupFile);
+          await deleteDatabaseBackup(backupFile);
           logger.info(
             `Deleted old backup for ${dbId}: ${basename(backupFile)} (${Math.floor(age)} days old)`
           );

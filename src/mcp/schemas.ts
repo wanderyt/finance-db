@@ -153,3 +153,107 @@ export const productsListSchema = z.object({
   offset,
 });
 export type ProductsListInput = z.infer<typeof productsListSchema>;
+
+// --- Write / receipt-intake tools ---------------------------------------
+//
+// These validate input for the write tools, which are thin HTTP clients of
+// the new-finance app (receipt analysis + record creation). All amounts are
+// in CENTS, matching the rest of the ledger.
+
+const currencyEnum = z
+  .enum(['CAD', 'USD', 'CNY'])
+  .describe('Currency of the amount actually paid.');
+
+export const analyzeReceiptSchema = z.object({
+  image_path: z
+    .string()
+    .min(1)
+    .describe('Absolute local path to the receipt image file to analyze.'),
+});
+export type AnalyzeReceiptInput = z.infer<typeof analyzeReceiptSchema>;
+
+const finLineItemSchema = z.object({
+  name: z.string().min(1).describe('Line-item name.'),
+  originalAmountCents: z.number().int().describe('Line-item total in cents.'),
+  qty: z.number().optional(),
+  unit: z.string().optional(),
+  unitPriceCents: z.number().int().optional(),
+  personId: z.number().int().optional(),
+  category: z.string().optional(),
+  subcategory: z.string().optional(),
+  notes: z.string().optional(),
+  brandName: z.string().optional(),
+});
+
+/** Mirrors new-finance's CreateFinRequest — the confirmed record payload. */
+export const createFinRequestSchema = z.object({
+  type: z.enum(['expense', 'income']).optional(),
+  date: z
+    .string()
+    .min(1)
+    .describe('ISO-8601 with timezone, e.g. "2026-01-15T14:30:00Z".'),
+  merchant: z.string().optional(),
+  comment: z.string().optional(),
+  place: z.string().optional(),
+  city: z.string().optional(),
+  category: z.string().optional(),
+  subcategory: z.string().optional(),
+  details: z.string().optional(),
+  originalCurrency: currencyEnum,
+  originalAmountCents: z
+    .number()
+    .int()
+    .min(0)
+    .describe('Total amount paid, in cents.'),
+  lineItems: z.array(finLineItemSchema).optional(),
+  isScheduled: z.boolean().optional(),
+  frequency: z
+    .enum(['daily', 'weekly', 'biweekly', 'monthly', 'annually'])
+    .optional(),
+  scheduledOn: z.string().optional(),
+});
+export type CreateFinRequestInput = z.infer<typeof createFinRequestSchema>;
+
+/** User corrections applied on top of the receipt analysis when building. */
+const buildOverridesSchema = z
+  .object({
+    type: z.enum(['expense', 'income']).optional(),
+    date: z.string().optional(),
+    merchant: z.string().optional(),
+    comment: z.string().optional(),
+    place: z.string().optional(),
+    city: z.string().optional(),
+    category: z.string().optional(),
+    subcategory: z.string().optional(),
+    details: z.string().optional(),
+    originalCurrency: currencyEnum.optional(),
+    originalAmountCents: z.number().int().min(0).optional(),
+  })
+  .optional();
+
+export const buildFinRecordSchema = z.object({
+  analysis: z
+    .record(z.any())
+    .describe('The object returned by analyze_receipt.'),
+  overrides: buildOverridesSchema.describe(
+    'Optional user corrections to apply on top of the analysis.',
+  ),
+});
+export type BuildFinRecordInput = z.infer<typeof buildFinRecordSchema>;
+
+export const createFinRecordSchema = z.object({
+  record: createFinRequestSchema.describe(
+    'The reviewed/confirmed fin record payload (from build_fin_record).',
+  ),
+  image_path: z
+    .string()
+    .min(1)
+    .optional()
+    .describe('Optional receipt image path to attach to the created record.'),
+  photo_paths: z
+    .array(z.string().min(1))
+    .max(6)
+    .optional()
+    .describe('Up to six absolute product photo paths. Use JPEG, PNG, or WebP, with at most 5 MiB per file.'),
+});
+export type CreateFinRecordInput = z.infer<typeof createFinRecordSchema>;

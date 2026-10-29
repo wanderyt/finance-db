@@ -1,7 +1,7 @@
 {
   "name": "finance-db",
-  "version": "1.11.0",
-  "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, automated backups, and an MCP server for read-only queries",
+  "version": "1.13.0",
+  "description": "SQLite database operations with Drizzle ORM, Drizzle Studio, automated backups, and an MCP server for finance queries plus receipt-intake write tools",
   "main": "dist/index.js",
   "bin": {
     "finance-db-mcp": "dist/mcp/server.js"
@@ -28,7 +28,8 @@
     "docker:build": "docker build -t finance-db .",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "test:photos": "node --import tsx --test tests/fin-photos.test.ts"
   },
   "author": "",
   "license": "ISC",

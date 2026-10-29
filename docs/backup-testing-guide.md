@@ -2,6 +2,20 @@
 
 This guide walks you through testing the backup system to ensure it works correctly.
 
+## Product photo backups
+
+Run `yarn test:photos` for isolated tests of database backups and their image files.
+These tests use temporary databases and a local HTTP test server.
+They do not change the development database or contact the website.
+
+Each new SQLite backup has a matching `<backup filename>.uploads` directory.
+Verify both receipts and product photos in that directory.
+Retention cleanup removes the database file and its matching uploads directory together.
+Backups from older releases remain database-only backups.
+
+Use the [current restore procedure](product-photos-feature.md#restore-a-backup) for databases that contain images.
+The database-only procedure below applies to older backups and does not restore images.
+
 ## Prerequisites
 
 1. Dependencies installed: `npm install`

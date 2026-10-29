@@ -2,8 +2,10 @@
 /**
  * MCP server entry point — finance-db.
  *
- * Exposes 5 read-only tools for querying fin_items joined to their parent
- * fin transaction. Speaks JSON-RPC over stdio so any MCP client (including
+ * Exposes read tools (query fin_items joined to their parent fin transaction,
+ * plus discovery) over a read-only SQLite handle, and write/receipt-intake
+ * tools that are thin HTTP clients of the new-finance app (they do not touch
+ * the DB handle). Speaks JSON-RPC over stdio so any MCP client (including
  * David's "openclaw" project) can spawn it as a subprocess.
  *
  * Run:
@@ -35,10 +37,11 @@ import { FinItemsRepository } from '../repositories/fin-items.repository.js';
 import { DiscoveryRepository } from '../repositories/discovery.repository.js';
 import { buildFinItemsTools } from './tools/fin-items.js';
 import { buildDiscoveryTools } from './tools/discovery.js';
+import { buildFinWriteTools } from './tools/fin-write.js';
 import { runTool } from './tools/types.js';
 
 const SERVER_NAME = 'finance-db';
-const SERVER_VERSION = '1.10.0';
+const SERVER_VERSION = '1.13.0';
 
 async function main(): Promise<void> {
   mcpLogger.info('Starting finance-db MCP server', {
@@ -56,6 +59,7 @@ async function main(): Promise<void> {
   const tools = [
     ...buildFinItemsTools(finItemsRepo),
     ...buildDiscoveryTools(discoveryRepo),
+    ...buildFinWriteTools(),
   ];
   const toolsByName = new Map(tools.map((t) => [t.name, t] as const));
 
@@ -82,7 +86,7 @@ async function main(): Promise<void> {
     }
 
     try {
-      const rows = runTool(tool, args ?? {});
+      const rows = await runTool(tool, args ?? {});
       return {
         content: [
           {
