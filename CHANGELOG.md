@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-11-06
+
+### Added
+- Add 必需, 享受, 可选, and 突发 spending priorities with record defaults and item overrides.
+- Add optional item reasons that users can edit.
+- Add a one-time SQL migration with Docker execution guidance.
+- Include the SQLite CLI in the Docker image for manual migrations.
+- Add isolated tests for migration constraints, inheritance, receipt suggestions, and HTTP creation.
+
+### Changed
+- Return raw and effective item priorities in MCP queries.
+- Preserve receipt priorities and reasons through MCP record assembly and creation.
+- Show priorities and reasons in the review summary and accept complete reviewed item overrides.
+- Document migration checks for databases shared with new-finance.
+
 ## [1.13.0] - 2026-10-28
 
 ### Added

@@ -34,6 +34,10 @@ Product photo setup, backup storage, and restore instructions are in [Product Ph
 Apply `migrations/005_add_fin_photos.sql` once per physical finance database.
 Both applications must use the same database and sibling `uploads` directory.
 
+Spending-priority fields, MCP behavior, and SQL commands appear in [Spending Priority](docs/spending-priority-feature.md).
+Apply `migrations/006_add_fin_necessity.sql` only when the shared database lacks the priority columns.
+Skip this migration if new-finance already applied it.
+
 ## Quick Start
 
 ### Prerequisites

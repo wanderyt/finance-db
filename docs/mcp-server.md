@@ -91,6 +91,29 @@ These three tools let an agent (Todd) turn a receipt image into a saved fin reco
 
 Intended sequence: `analyze_receipt` → `build_fin_record` → show `summary` to the user → on approval → `create_fin_record`. All amounts are in **cents**. `build_fin_record` normalizes the naive Gemini date to ISO-8601 UTC (appends `Z`, or `T12:00:00Z` for a bare date). These tools require the `new-finance` app to be running at `FINANCE_API_URL` and `FINANCE_MCP_KEY` to match the app's env; they error clearly if the key is unset.
 
+### Spending priorities
+
+The website returns `suggestedNecessityLevel` and `necessityReason` for each analyzed item.
+`build_fin_record` preserves valid suggestions and defaults missing or invalid suggestions to `essential`.
+The four values are `essential` (必需), `personal_priority` (享受), `flexible` (可选), and `unexpected` (突发).
+The website supplies separate tax and tip items.
+Finance-db does not reclassify receipts.
+
+`overrides.necessityLevel` sets the record default, which otherwise uses `essential`.
+`overrides.lineItems` replaces all items, including reviewed priorities and reasons.
+An empty array removes all analyzed items.
+An item priority of null or an omitted priority inherits the record default.
+An explicit priority remains independent of later changes to the record default.
+Reasons are optional and editable, with a 300-character limit.
+Blank reasons become null.
+The review summary shows priorities and reasons.
+Both JSON and multipart creation retain these fields.
+
+MCP queries require the matching database columns before deployment.
+See [Spending Priority](spending-priority-feature.md) for definitions and Docker SQL commands.
+Apply the migration once per physical database, then restart Studio and MCP.
+Skip the migration if new-finance already added these columns.
+
 ### Product photos
 
 `create_fin_record` accepts optional `photo_paths` beside the existing receipt `image_path`.
@@ -137,10 +160,14 @@ Each **query-tool** row is a `FinItemWithFin`:
   "itemSubcategory": null,
   "notes": null,
   "brandName": null,
+  "necessityLevel": null,
+  "necessityReason": null,
+  "effectiveNecessityLevel": "essential",
   "fin": {
     "finId": "05411F21-A0AE-4D65-BDAA-DE21A336CE76",
     "userId": 1,
     "type": "expense",
+    "necessityLevel": "essential",
     "date": "2024-11-16 11:25:30",
     "merchant": "星巴克",
     "city": "Waterloo",
@@ -164,6 +191,11 @@ The `tools/call` response wraps results as:
 ```json
 { "count": 3, "rows": [ /* … */ ] }
 ```
+
+### Item priorities
+
+`necessityLevel` is the raw item override.
+`effectiveNecessityLevel` uses that override or the nested `fin.necessityLevel` default.
 
 ### Currency
 

@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install build dependencies for better-sqlite3 native compilation
-RUN apk add --no-cache python3 make g++
+# Install SQLite for manual migrations and build dependencies for better-sqlite3.
+RUN apk add --no-cache sqlite python3 make g++
 
 # Enable Corepack for Yarn Berry support
 RUN corepack enable
