@@ -1,5 +1,6 @@
 import { open, readFile } from 'node:fs/promises';
 import { basename, extname, isAbsolute } from 'node:path';
+import { isNecessityLevel, NECESSITY_LABELS, NECESSITY_LEVELS } from '../../db/necessity.js';
 
 import { mcpConfig } from '../config.js';
 import {
@@ -9,6 +10,41 @@ import {
   type CreateFinRequestInput,
 } from '../schemas.js';
 import { type AnyTool } from './types.js';
+
+const priorityProperties = {
+  necessityLevel: {
+    type: 'string', enum: NECESSITY_LEVELS,
+    description: 'Record default: essential (必需), personal_priority (享受), flexible (可选), or unexpected (突发). Defaults to essential.',
+  },
+  lineItems: {
+    type: 'array',
+    description: 'Complete reviewed item list. In build overrides, this replaces all analyzed items.',
+    items: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', minLength: 1 },
+        originalAmountCents: { type: 'integer' },
+        qty: { type: 'number' },
+        unit: { type: 'string' },
+        unitPriceCents: { type: 'integer' },
+        personId: { type: 'integer' },
+        category: { type: 'string' },
+        subcategory: { type: 'string' },
+        notes: { type: 'string' },
+        brandName: { type: 'string' },
+        necessityLevel: {
+          anyOf: [{ type: 'string', enum: NECESSITY_LEVELS }, { type: 'null' }],
+          description: 'Item priority. Null or omitted inherits the record default.',
+        },
+        necessityReason: {
+          type: ['string', 'null'], maxLength: 300,
+          description: 'Optional editable reason. Blank text becomes null.',
+        },
+      },
+      required: ['name', 'originalAmountCents'],
+    },
+  },
+};
 
 /**
  * Write / receipt-intake tools.
@@ -27,7 +63,7 @@ export function buildFinWriteTools(): AnyTool[] {
       description:
         'Analyze a receipt image and return the extracted structured data ' +
         '(merchant, city, date, currency, totals, line items, suggested ' +
-        'category — all amounts in CENTS). Does NOT write anything. Pass the ' +
+        'category, item priorities, and reasons — all amounts in CENTS). Does NOT write anything. Pass the ' +
         'result to build_fin_record next. Returns a single row.',
       schema: analyzeReceiptSchema,
       inputSchema: {
@@ -65,8 +101,9 @@ export function buildFinWriteTools(): AnyTool[] {
           },
           overrides: {
             type: 'object',
+            properties: priorityProperties,
             description:
-              'Optional user corrections (merchant, date, category, amount, currency, …).',
+              'Optional corrections to merchant, date, category, amount, currency, record priority, or the complete item list.',
           },
         },
         required: ['analysis'],
@@ -90,6 +127,7 @@ export function buildFinWriteTools(): AnyTool[] {
         properties: {
           record: {
             type: 'object',
+            properties: priorityProperties,
             description:
               'The confirmed fin record payload from build_fin_record. Requires ' +
               'date (ISO-8601 UTC), originalCurrency (CAD/USD/CNY), originalAmountCents.',
@@ -262,6 +300,8 @@ type AnalysisLineItem = {
   unitPriceCents?: number | null;
   notes?: string | null;
   brandName?: string | null;
+  suggestedNecessityLevel?: unknown;
+  necessityReason?: string | null;
 };
 
 type Analysis = {
@@ -291,7 +331,7 @@ function buildRecord(
   const originalAmountCents =
     overrides.originalAmountCents ?? a.totalAmount ?? 0;
 
-  const lineItems = (a.lineItems ?? []).map((item) => ({
+  const lineItems = overrides.lineItems ?? (a.lineItems ?? []).map((item) => ({
     name: item.name ?? 'Item',
     originalAmountCents: item.amount ?? 0,
     qty: item.quantity ?? undefined,
@@ -299,10 +339,13 @@ function buildRecord(
     unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? undefined,
     notes: item.notes ?? undefined,
     brandName: item.brandName ?? undefined,
+    necessityLevel: isNecessityLevel(item.suggestedNecessityLevel) ? item.suggestedNecessityLevel : 'essential',
+    necessityReason: typeof item.necessityReason === 'string' ? item.necessityReason.trim().slice(0, 300) || null : null,
   }));
 
   const record: CreateFinRequestInput = {
     type: overrides.type ?? 'expense',
+    necessityLevel: overrides.necessityLevel ?? 'essential',
     date: normalizeDate(overrides.date ?? a.date),
     merchant: overrides.merchant ?? a.merchant,
     comment: overrides.comment,
@@ -313,7 +356,7 @@ function buildRecord(
     details: overrides.details,
     originalCurrency: currency,
     originalAmountCents,
-    lineItems: lineItems.length > 0 ? lineItems : undefined,
+    lineItems: overrides.lineItems !== undefined || lineItems.length > 0 ? lineItems : undefined,
   };
 
   // Drop undefined keys so the payload is clean.
@@ -355,7 +398,9 @@ function summarize(record: CreateFinRequestInput): string {
     : '';
   const lines = (record.lineItems ?? []).map((li) => {
     const qty = li.qty ? ` ×${li.qty}` : '';
-    return `  • ${li.name}${qty} — ${fmtMoney(li.originalAmountCents, cur)}`;
+    const priority = NECESSITY_LABELS[li.necessityLevel ?? record.necessityLevel ?? 'essential'];
+    const reason = li.necessityReason ? ` (${li.necessityReason})` : '';
+    return `  • ${li.name}${qty} — ${fmtMoney(li.originalAmountCents, cur)} [${priority}]${reason}`;
   });
-  return [head + cat, ...lines].join('\n');
+  return [head + cat + ` [${NECESSITY_LABELS[record.necessityLevel ?? 'essential']}]`, ...lines].join('\n');
 }

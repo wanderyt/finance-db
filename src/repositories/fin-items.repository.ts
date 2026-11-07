@@ -72,11 +72,15 @@ export interface FinItemWithFin {
   itemSubcategory: FinItem['subcategory'];
   notes: FinItem['notes'];
   brandName: FinItem['brandName'];
+  necessityLevel: FinItem['necessityLevel'];
+  necessityReason: FinItem['necessityReason'];
+  effectiveNecessityLevel: Fin['necessityLevel'];
   // parent fin transaction context
   fin: {
     finId: Fin['finId'];
     userId: Fin['userId'];
     type: Fin['type'];
+    necessityLevel: Fin['necessityLevel'];
     date: Fin['date'];
     merchant: Fin['merchant'];
     city: Fin['city'];
@@ -275,9 +279,12 @@ export class FinItemsRepository {
           itemSubcategory: finItems.subcategory,
           notes: finItems.notes,
           brandName: finItems.brandName,
+          necessityLevel: finItems.necessityLevel,
+          necessityReason: finItems.necessityReason,
           // fin columns (under aliased keys)
           finUserId: fin.userId,
           finType: fin.type,
+          finNecessityLevel: fin.necessityLevel,
           finDate: fin.date,
           finMerchant: fin.merchant,
           finCity: fin.city,
@@ -324,10 +331,14 @@ function reshapeRow(row: any): FinItemWithFin {
     itemSubcategory: row.itemSubcategory,
     notes: row.notes,
     brandName: row.brandName,
+    necessityLevel: row.necessityLevel,
+    necessityReason: row.necessityReason,
+    effectiveNecessityLevel: row.necessityLevel ?? row.finNecessityLevel,
     fin: {
       finId: row.finId,
       userId: row.finUserId,
       type: row.finType,
+      necessityLevel: row.finNecessityLevel,
       date: row.finDate,
       merchant: row.finMerchant,
       city: row.finCity,

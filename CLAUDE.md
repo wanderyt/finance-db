@@ -11,6 +11,7 @@ Before planning or implementing any change, check whether an existing design doc
 | [docs/pocket-money-feature.md](docs/pocket-money-feature.md) | Full spec for the pocket money system (allowances, bonuses, deductions, backfill logic) — read before touching `pocket_money` or `pocket_money_job_state` |
 | [docs/backup-testing-guide.md](docs/backup-testing-guide.md) | Step-by-step guide for verifying the backup system — run through this after any backup-related change |
 | [docs/mcp-server.md](docs/mcp-server.md) | MCP server spec — 5 read-only `query_fin_items_by_*` query tools plus 6 `get_all_*` discovery tools (canonical merchants, cities, categories, subcategories, brands, products) consumable by openclaw / Claude Desktop / any MCP host |
+| [docs/spending-priority-feature.md](docs/spending-priority-feature.md) | Record defaults, item overrides, receipt suggestions, and the shared database migration |
 
 ## Keeping Design Docs Up to Date
 

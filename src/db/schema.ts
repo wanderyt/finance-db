@@ -1,5 +1,6 @@
-import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+import { NECESSITY_LEVELS } from './necessity.js';
 
 // Users table
 export const users = sqliteTable('users', {
@@ -74,6 +75,7 @@ export const fin = sqliteTable('fin', {
   finId: text('fin_id').primaryKey(),
   userId: integer('user_id').notNull().references(() => users.userId, { onDelete: 'cascade' }),
   type: text('type').notNull().default('expense'),
+  necessityLevel: text('necessity_level', { enum: NECESSITY_LEVELS }).notNull().default('essential'),
   date: text('date').notNull(),
   scheduledOn: text('scheduled_on'),
   scheduleRuleId: integer('schedule_rule_id').references(() => scheduleRules.scheduleRuleId, { onDelete: 'set null' }),
@@ -93,6 +95,7 @@ export const fin = sqliteTable('fin', {
   amountBaseCadCents: integer('amount_base_cad_cents').notNull(),
   isScheduled: integer('is_scheduled', { mode: 'boolean' }).notNull().default(false)
 }, (table) => ({
+  necessityLevelCheck: check('fin_necessity_level_check', sql`${table.necessityLevel} IN ('essential', 'personal_priority', 'flexible', 'unexpected')`),
   idxFinUserDate: index('idx_fin_user_date').on(table.userId, table.date),
   idxFinUserTypeDate: index('idx_fin_user_type_date').on(table.userId, table.type, table.date),
   idxFinUserCat: index('idx_fin_user_cat').on(table.userId, table.category, table.subcategory),
@@ -117,8 +120,11 @@ export const finItems = sqliteTable('fin_items', {
   category: text('category'),
   subcategory: text('subcategory'),
   notes: text('notes'),
-  brandName: text('brand_name')
+  brandName: text('brand_name'),
+  necessityLevel: text('necessity_level', { enum: NECESSITY_LEVELS }),
+  necessityReason: text('necessity_reason')
 }, (table) => ({
+  necessityLevelCheck: check('item_necessity_level_check', sql`${table.necessityLevel} IS NULL OR ${table.necessityLevel} IN ('essential', 'personal_priority', 'flexible', 'unexpected')`),
   idxItemsFin: index('idx_items_fin').on(table.finId),
   idxItemsPerson: index('idx_items_person').on(table.personId)
 }));

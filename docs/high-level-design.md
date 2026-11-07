@@ -93,6 +93,9 @@ Added in [v1.7.0](../CHANGELOG.md). Full feature documentation: [pocket-money-fe
 
 The schema is defined in `src/db/schema.ts` and must exactly match the existing database structure (no Drizzle migrations are used).
 
+Spending priorities use a record default, nullable item overrides, and optional item reasons.
+See [Spending Priority](spending-priority-feature.md) for the manual SQL migration and MCP behavior.
+
 ## 5. Directory Structure
 
 ```

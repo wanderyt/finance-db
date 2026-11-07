@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_LIMIT, MAX_LIMIT } from '../repositories/pagination.js';
+import { NECESSITY_LEVELS } from '../db/necessity.js';
 
 const limit = z
   .number()
@@ -172,6 +173,9 @@ export const analyzeReceiptSchema = z.object({
 });
 export type AnalyzeReceiptInput = z.infer<typeof analyzeReceiptSchema>;
 
+export const necessityLevelSchema = z.enum(NECESSITY_LEVELS)
+  .describe('Spending priority: essential (必需), personal_priority (享受), flexible (可选), or unexpected (突发).');
+
 const finLineItemSchema = z.object({
   name: z.string().min(1).describe('Line-item name.'),
   originalAmountCents: z.number().int().describe('Line-item total in cents.'),
@@ -183,11 +187,17 @@ const finLineItemSchema = z.object({
   subcategory: z.string().optional(),
   notes: z.string().optional(),
   brandName: z.string().optional(),
+  necessityLevel: necessityLevelSchema.nullable().optional()
+    .describe('An explicit item priority. Null or omitted means inherit the record default.'),
+  necessityReason: z.string().max(300).nullable().optional()
+    .transform((value) => typeof value === 'string' ? value.trim() || null : value)
+    .describe('Optional editable reason, up to 300 characters. Blank text becomes null.'),
 });
 
 /** Mirrors new-finance's CreateFinRequest — the confirmed record payload. */
 export const createFinRequestSchema = z.object({
   type: z.enum(['expense', 'income']).optional(),
+  necessityLevel: necessityLevelSchema.optional().describe('Record default priority. Omitted values default to essential in the website.'),
   date: z
     .string()
     .min(1)
@@ -218,6 +228,9 @@ export type CreateFinRequestInput = z.infer<typeof createFinRequestSchema>;
 const buildOverridesSchema = z
   .object({
     type: z.enum(['expense', 'income']).optional(),
+    necessityLevel: necessityLevelSchema.optional(),
+    lineItems: z.array(finLineItemSchema).optional()
+      .describe('Optional complete replacement of the analyzed items, including reviewed priorities and reasons.'),
     date: z.string().optional(),
     merchant: z.string().optional(),
     comment: z.string().optional(),
