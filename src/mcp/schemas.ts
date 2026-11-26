@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DEFAULT_LIMIT, MAX_LIMIT } from '../repositories/pagination.js';
 import { NECESSITY_LEVELS } from '../db/necessity.js';
+import { TAX_STATUSES } from '../db/tax.js';
 
 const limit = z
   .number()
@@ -73,9 +74,9 @@ export const categorySchema = z.object({
     .optional()
     .describe('Optional subcategory to narrow the match (e.g. "买菜原料", "午餐").'),
   scope: z
-    .enum(['fin', 'item', 'either'])
-    .default('either')
-    .describe('Where to look for the category match: "fin" = transaction-level only, "item" = line-item override only, "either" (default) = match if either matches.'),
+    .enum(['effective', 'fin', 'item', 'either'])
+    .default('effective')
+    .describe('Where to look for the category match: "effective" (default) = the item pair, or the transaction pair when the item has none; "fin" = transaction-level only; "item" = line-item pair only; "either" = match if either matches.'),
   limit,
   offset,
 });
@@ -174,7 +175,7 @@ export const analyzeReceiptSchema = z.object({
 export type AnalyzeReceiptInput = z.infer<typeof analyzeReceiptSchema>;
 
 export const necessityLevelSchema = z.enum(NECESSITY_LEVELS)
-  .describe('Spending priority: essential (必需), personal_priority (享受), flexible (可选), or unexpected (突发).');
+  .describe('Spending priority: essential (必需), personal_priority (品质), flexible (可选), or unexpected (突发).');
 
 const finLineItemSchema = z.object({
   name: z.string().min(1).describe('Line-item name.'),
@@ -183,10 +184,13 @@ const finLineItemSchema = z.object({
   unit: z.string().optional(),
   unitPriceCents: z.number().int().optional(),
   personId: z.number().int().optional(),
-  category: z.string().optional(),
-  subcategory: z.string().optional(),
+  category: z.string().nullable().optional()
+    .describe('Item category. Null or omitted means the item follows the record category pair.'),
+  subcategory: z.string().nullable().optional().describe('Item subcategory. It requires an item category.'),
   notes: z.string().optional(),
   brandName: z.string().optional(),
+  taxStatus: z.enum(TAX_STATUSES).optional()
+    .describe('taxable (计税), exempt (免税), or tax (a 税 line). Omitted values default by name in the website: 税 becomes tax.'),
   necessityLevel: necessityLevelSchema.nullable().optional()
     .describe('An explicit item priority. Null or omitted means inherit the record default.'),
   necessityReason: z.string().max(300).nullable().optional()

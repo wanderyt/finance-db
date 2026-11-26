@@ -1,6 +1,7 @@
 import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, check } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import { NECESSITY_LEVELS } from './necessity.js';
+import { TAX_STATUSES } from './tax.js';
 
 // Users table
 export const users = sqliteTable('users', {
@@ -122,8 +123,10 @@ export const finItems = sqliteTable('fin_items', {
   notes: text('notes'),
   brandName: text('brand_name'),
   necessityLevel: text('necessity_level', { enum: NECESSITY_LEVELS }),
-  necessityReason: text('necessity_reason')
+  necessityReason: text('necessity_reason'),
+  taxStatus: text('tax_status', { enum: TAX_STATUSES }).notNull().default('taxable')
 }, (table) => ({
+  taxStatusCheck: check('item_tax_status_check', sql`${table.taxStatus} IN ('taxable', 'exempt', 'tax')`),
   necessityLevelCheck: check('item_necessity_level_check', sql`${table.necessityLevel} IS NULL OR ${table.necessityLevel} IN ('essential', 'personal_priority', 'flexible', 'unexpected')`),
   idxItemsFin: index('idx_items_fin').on(table.finId),
   idxItemsPerson: index('idx_items_person').on(table.personId)

@@ -58,8 +58,8 @@ export function buildFinItemsTools(repo: FinItemsRepository): AnyTool[] {
       name: 'query_fin_items_by_category',
       description:
         'Find fin_items by category (and optionally subcategory). Categories can live on the ' +
-        'transaction (fin.category) or on the line item itself (fin_items.category). Set `scope` ' +
-        'to "fin", "item", or "either" (default) to control where the match applies. ' +
+        'transaction (fin.category) or on the line item itself (fin_items.category). An item without a ' +
+        'category follows the transaction pair. Set `scope` to "effective" (default), "fin", "item", or "either". ' +
         'Tip: call `get_all_categories` (or `get_all_subcategories` with a `category` filter) first to discover valid values.',
       schema: categorySchema,
       inputSchema: jsonSchemaForCategory(),
@@ -166,10 +166,11 @@ function jsonSchemaForCategory(): Record<string, unknown> {
       },
       scope: {
         type: 'string',
-        enum: ['fin', 'item', 'either'],
-        default: 'either',
+        enum: ['effective', 'fin', 'item', 'either'],
+        default: 'effective',
         description:
-          'Where to look: "fin" = transaction-level only, "item" = line-item only, "either" = both.',
+          'Where to look: "effective" = the item pair, or the transaction pair when the item has none; ' +
+          '"fin" = transaction-level only; "item" = line-item pair only; "either" = both.',
       },
       limit: limitProp,
       offset: offsetProp,

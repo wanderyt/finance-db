@@ -96,6 +96,9 @@ The schema is defined in `src/db/schema.ts` and must exactly match the existing 
 Spending priorities use a record default, nullable item overrides, and optional item reasons.
 See [Spending Priority](spending-priority-feature.md) for the manual SQL migration and MCP behavior.
 
+Line items can carry their own category pair and a tax status (`taxable`, `exempt`, or `tax`).
+See [Item Categories](item-categories-feature.md) for the manual SQL migration and MCP behavior.
+
 ## 5. Directory Structure
 
 ```

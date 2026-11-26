@@ -15,6 +15,7 @@ import { createFinRequestSchema } from '../src/mcp/schemas.js';
 
 const migration = await readFile(new URL('../migrations/006_add_fin_necessity.sql', import.meta.url), 'utf8');
 const photoMigration = await readFile(new URL('../migrations/005_add_fin_photos.sql', import.meta.url), 'utf8');
+const taxMigration = await readFile(new URL('../migrations/007_add_item_tax_status.sql', import.meta.url), 'utf8');
 const root = await mkdtemp(join(tmpdir(), 'finance-db-necessity-'));
 after(() => rm(root, { recursive: true, force: true }));
 
@@ -23,6 +24,7 @@ function fixture() {
   sqlite.pragma('foreign_keys = ON');
   sqlite.exec(`
     CREATE TABLE users (user_id INTEGER PRIMARY KEY);
+    CREATE TABLE categories (user_id INTEGER NOT NULL, category TEXT NOT NULL, subcategory TEXT NOT NULL);
     CREATE TABLE fin (
       fin_id TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(user_id),
       type TEXT NOT NULL DEFAULT 'expense', date TEXT NOT NULL,
@@ -53,6 +55,7 @@ function fixture() {
     (fin_id, storage_key, original_name, mime_type, size_bytes, sort_order, uploaded_at)
     VALUES ('one', 'photo.jpg', 'photo.jpg', 'image/jpeg', 4, 0, '2026-11-06');`);
   sqlite.exec(migration);
+  sqlite.exec(taxMigration);
   return { sqlite, db: drizzle(sqlite) };
 }
 
@@ -140,7 +143,7 @@ test('MCP preserves receipt suggestions, reviewed overrides, and priorities thro
     assert.equal(record.lineItems[0].necessityReason, 'User context');
     assert.equal(record.lineItems[4].necessityReason, null);
     assert.equal(record.lineItems[5].necessityReason.length, 300);
-    assert.match(summary, /享受/);
+    assert.match(summary, /品质/);
     assert.match(summary, /突发/);
     assert.match(summary, /User context/);
     await runTool(create, { record });

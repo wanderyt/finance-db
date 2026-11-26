@@ -11,7 +11,7 @@ The website owns receipt analysis, classification rules, and the spending-priori
 | Stored value | Label | Definition |
 |---|---|---|
 | `essential` | 必需 | Expenses for basic living, health, or obligations. Taxes belong here. |
-| `personal_priority` | 享受 | Expenses someone chooses to retain for wellbeing, confidence, or personal goals. Aesthetic treatments can belong here. |
+| `personal_priority` | 品质 | Expenses someone chooses to retain for wellbeing, confidence, or personal goals. Aesthetic treatments can belong here. |
 | `flexible` | 可选 | Expenses someone can reduce, postpone, or skip when money is tight. Tips belong here. |
 | `unexpected` | 突发 | Unplanned expenses, including fines and repairs after breakdowns, damage, or emergencies. Routine maintenance does not automatically belong here. |
 
