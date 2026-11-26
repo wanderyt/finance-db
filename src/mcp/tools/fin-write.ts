@@ -1,6 +1,7 @@
 import { open, readFile } from 'node:fs/promises';
 import { basename, extname, isAbsolute } from 'node:path';
 import { isNecessityLevel, NECESSITY_LABELS, NECESSITY_LEVELS } from '../../db/necessity.js';
+import { isTaxStatus, TAX_STATUS_LABELS, TAX_STATUSES } from '../../db/tax.js';
 
 import { mcpConfig } from '../config.js';
 import {
@@ -14,7 +15,7 @@ import { type AnyTool } from './types.js';
 const priorityProperties = {
   necessityLevel: {
     type: 'string', enum: NECESSITY_LEVELS,
-    description: 'Record default: essential (必需), personal_priority (享受), flexible (可选), or unexpected (突发). Defaults to essential.',
+    description: 'Record default: essential (必需), personal_priority (品质), flexible (可选), or unexpected (突发). Defaults to essential.',
   },
   lineItems: {
     type: 'array',
@@ -28,10 +29,17 @@ const priorityProperties = {
         unit: { type: 'string' },
         unitPriceCents: { type: 'integer' },
         personId: { type: 'integer' },
-        category: { type: 'string' },
-        subcategory: { type: 'string' },
+        category: {
+          type: ['string', 'null'],
+          description: 'Item category. Null or omitted follows the record category pair.',
+        },
+        subcategory: { type: ['string', 'null'], description: 'Item subcategory. It requires an item category.' },
         notes: { type: 'string' },
         brandName: { type: 'string' },
+        taxStatus: {
+          type: 'string', enum: TAX_STATUSES,
+          description: 'taxable (计税), exempt (免税), or tax (a 税 line). Each 税 line carries the category of the goods it taxes.',
+        },
         necessityLevel: {
           anyOf: [{ type: 'string', enum: NECESSITY_LEVELS }, { type: 'null' }],
           description: 'Item priority. Null or omitted inherits the record default.',
@@ -63,7 +71,8 @@ export function buildFinWriteTools(): AnyTool[] {
       description:
         'Analyze a receipt image and return the extracted structured data ' +
         '(merchant, city, date, currency, totals, line items, suggested ' +
-        'category, item priorities, and reasons — all amounts in CENTS). Does NOT write anything. Pass the ' +
+        'category, item categories, tax status, item priorities, and reasons — all amounts in CENTS). ' +
+        'The tax total arrives already split into one 税 line per item category. Does NOT write anything. Pass the ' +
         'result to build_fin_record next. Returns a single row.',
       schema: analyzeReceiptSchema,
       inputSchema: {
@@ -302,6 +311,9 @@ type AnalysisLineItem = {
   brandName?: string | null;
   suggestedNecessityLevel?: unknown;
   necessityReason?: string | null;
+  taxStatus?: unknown;
+  suggestedCategory?: string | null;
+  suggestedSubcategory?: string | null;
 };
 
 type Analysis = {
@@ -339,6 +351,9 @@ function buildRecord(
     unitPriceCents: item.unitPriceCents ?? item.unitPrice ?? undefined,
     notes: item.notes ?? undefined,
     brandName: item.brandName ?? undefined,
+    category: item.suggestedCategory || null,
+    subcategory: item.suggestedCategory ? item.suggestedSubcategory || null : null,
+    taxStatus: isTaxStatus(item.taxStatus) ? item.taxStatus : undefined,
     necessityLevel: isNecessityLevel(item.suggestedNecessityLevel) ? item.suggestedNecessityLevel : 'essential',
     necessityReason: typeof item.necessityReason === 'string' ? item.necessityReason.trim().slice(0, 300) || null : null,
   }));
@@ -400,7 +415,9 @@ function summarize(record: CreateFinRequestInput): string {
     const qty = li.qty ? ` ×${li.qty}` : '';
     const priority = NECESSITY_LABELS[li.necessityLevel ?? record.necessityLevel ?? 'essential'];
     const reason = li.necessityReason ? ` (${li.necessityReason})` : '';
-    return `  • ${li.name}${qty} — ${fmtMoney(li.originalAmountCents, cur)} [${priority}]${reason}`;
+    const pair = li.category ? ` [${li.category}${li.subcategory ? '/' + li.subcategory : ''}]` : '';
+    const tax = li.taxStatus && li.taxStatus !== 'tax' ? ` [${TAX_STATUS_LABELS[li.taxStatus]}]` : '';
+    return `  • ${li.name}${qty} — ${fmtMoney(li.originalAmountCents, cur)}${pair}${tax} [${priority}]${reason}`;
   });
   return [head + cat + ` [${NECESSITY_LABELS[record.necessityLevel ?? 'essential']}]`, ...lines].join('\n');
 }

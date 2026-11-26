@@ -37,6 +37,9 @@ SELECT_COLS = textwrap.dedent("""
       fi.notes, fi.brand_name, fi.necessity_level, fi.necessity_reason,
       COALESCE(fi.necessity_level, f.necessity_level) AS effective_necessity_level,
       f.necessity_level AS fin_necessity_level,
+      fi.tax_status,
+      CASE WHEN fi.category IS NOT NULL THEN fi.category ELSE f.category END AS effective_category,
+      CASE WHEN fi.category IS NOT NULL THEN fi.subcategory ELSE f.subcategory END AS effective_subcategory,
       f.user_id, f.type, f.date, f.merchant, f.city, f.place,
       f.category, f.subcategory, f.comment, f.details,
       f.original_currency, f.original_amount_cents,
@@ -87,6 +90,15 @@ run(
     "category=生活 scope=fin",
     SELECT_COLS + "WHERE f.user_id = ? AND f.category = ? " + ORDER,
     (USER_ID, '生活', LIMIT),
+)
+
+# 4c. By category + subcategory, scope=effective (default)
+run(
+    "category=生活 sub=买菜原料 scope=effective",
+    SELECT_COLS + """WHERE f.user_id = ?
+        AND (CASE WHEN fi.category IS NOT NULL THEN fi.category ELSE f.category END) = ?
+        AND (CASE WHEN fi.category IS NOT NULL THEN fi.subcategory ELSE f.subcategory END) = ? """ + ORDER,
+    (USER_ID, '生活', '买菜原料', LIMIT),
 )
 
 # 4b. By category + subcategory, scope=either

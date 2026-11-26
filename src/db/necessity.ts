@@ -3,7 +3,7 @@ export type NecessityLevel = (typeof NECESSITY_LEVELS)[number];
 
 export const NECESSITY_LABELS: Record<NecessityLevel, string> = {
   essential: '必需',
-  personal_priority: '享受',
+  personal_priority: '品质',
   flexible: '可选',
   unexpected: '突发',
 };

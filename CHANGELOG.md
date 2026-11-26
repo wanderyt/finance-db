@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-11-25
+
+### Added
+- Add `fin_items.tax_status` with `taxable` (计税), `exempt` (免税), and `tax` (税) values.
+- Return `taxStatus`, `effectiveCategory`, and `effectiveSubcategory` in MCP item queries.
+- Add an `effective` category scope that matches the item pair, or the record pair when the item has none.
+- Add a one-time SQL migration that marks tax and tip rows and clears item pairs that copy the record pair.
+- Add tests for the migration, effective category queries, and record assembly.
+
+### Changed
+- Use the `effective` scope as the default for `query_fin_items_by_category`. The earlier default was `either`.
+- Preserve item category pairs and tax status from receipt analysis through `build_fin_record` and `create_fin_record`.
+- Show item pairs and 计税 / 免税 labels in the review summary.
+- Rename the `personal_priority` label from 享受 to 品质, matching new-finance 1.21.1.
+
 ## [1.14.0] - 2026-11-06
 
 ### Added

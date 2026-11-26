@@ -38,6 +38,10 @@ Spending-priority fields, MCP behavior, and SQL commands appear in [Spending Pri
 Apply `migrations/006_add_fin_necessity.sql` only when the shared database lacks the priority columns.
 Skip this migration if new-finance already applied it.
 
+Item categories and tax status appear in [Item Categories](docs/item-categories-feature.md).
+Apply `migrations/007_add_item_tax_status.sql` only when the shared database lacks `fin_items.tax_status`.
+Skip this migration if new-finance already applied it.
+
 ## Quick Start
 
 ### Prerequisites

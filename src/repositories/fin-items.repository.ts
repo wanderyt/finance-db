@@ -29,16 +29,17 @@ export interface CityQueryOptions extends FinItemsQueryOptions {
   exact?: boolean;
 }
 
-export type CategoryScope = 'fin' | 'item' | 'either';
+export type CategoryScope = 'effective' | 'fin' | 'item' | 'either';
 
 export interface CategoryQueryOptions extends FinItemsQueryOptions {
   /** Filter by subcategory in addition to category. */
   subcategory?: string;
   /**
    * Where to look for the category match:
-   * - `fin`    — match against fin.category (transaction-level)
-   * - `item`   — match against fin_items.category (line-level override)
-   * - `either` — match if either matches (default)
+   * - `effective` — the item pair, or the transaction pair when the item has none (default)
+   * - `fin`       — match against fin.category (transaction-level)
+   * - `item`      — match against fin_items.category (line-level override)
+   * - `either`    — match if either matches
    */
   scope?: CategoryScope;
 }
@@ -75,6 +76,10 @@ export interface FinItemWithFin {
   necessityLevel: FinItem['necessityLevel'];
   necessityReason: FinItem['necessityReason'];
   effectiveNecessityLevel: Fin['necessityLevel'];
+  taxStatus: FinItem['taxStatus'];
+  /** The item pair, or the transaction pair when the item has no category. */
+  effectiveCategory: Fin['category'];
+  effectiveSubcategory: Fin['subcategory'];
   // parent fin transaction context
   fin: {
     finId: Fin['finId'];
@@ -106,6 +111,9 @@ export interface FinItemWithFin {
  *
  * Default sort: fin.date DESC, then fin_items.line_no ASC for determinism.
  */
+const effectiveCategory = sql<string | null>`CASE WHEN ${finItems.category} IS NOT NULL THEN ${finItems.category} ELSE ${fin.category} END`;
+const effectiveSubcategory = sql<string | null>`CASE WHEN ${finItems.category} IS NOT NULL THEN ${finItems.subcategory} ELSE ${fin.subcategory} END`;
+
 export class FinItemsRepository {
   constructor(private db: BetterSQLite3Database) {}
 
@@ -187,7 +195,7 @@ export class FinItemsRepository {
   findByCategory(category: string, options: CategoryQueryOptions = {}): FinItemWithFin[] {
     const {
       subcategory,
-      scope = 'either',
+      scope = 'effective',
       userId = DEFAULT_USER_ID,
       limit,
       offset,
@@ -205,8 +213,15 @@ export class FinItemsRepository {
       ? and(eq(finItems.category, category), eq(finItems.subcategory, subcategory))
       : eq(finItems.category, category);
 
+    // An item category pair overrides the transaction pair as a whole.
+    const effectiveCatMatch = subcategory
+      ? and(sql`${effectiveCategory} = ${category}`, sql`${effectiveSubcategory} = ${subcategory}`)
+      : sql`${effectiveCategory} = ${category}`;
+
     let scopePredicate: SQL;
-    if (scope === 'fin') {
+    if (scope === 'effective') {
+      scopePredicate = effectiveCatMatch!;
+    } else if (scope === 'fin') {
       scopePredicate = finCatMatch!;
     } else if (scope === 'item') {
       scopePredicate = itemCatMatch!;
@@ -281,6 +296,9 @@ export class FinItemsRepository {
           brandName: finItems.brandName,
           necessityLevel: finItems.necessityLevel,
           necessityReason: finItems.necessityReason,
+          taxStatus: finItems.taxStatus,
+          effectiveCategory,
+          effectiveSubcategory,
           // fin columns (under aliased keys)
           finUserId: fin.userId,
           finType: fin.type,
@@ -334,6 +352,9 @@ function reshapeRow(row: any): FinItemWithFin {
     necessityLevel: row.necessityLevel,
     necessityReason: row.necessityReason,
     effectiveNecessityLevel: row.necessityLevel ?? row.finNecessityLevel,
+    taxStatus: row.taxStatus,
+    effectiveCategory: row.effectiveCategory,
+    effectiveSubcategory: row.effectiveSubcategory,
     fin: {
       finId: row.finId,
       userId: row.finUserId,

@@ -21,7 +21,7 @@ All five tools query `fin_items` joined to their parent `fin` transaction. Every
 | `query_fin_items_by_merchant` | Items where parent transaction's merchant matches | `merchant: string` | `exact: bool` (default `false` = case-insensitive substring), `limit`, `offset` |
 | `query_fin_items_by_date_range` | Items in a transaction date window (inclusive) | `from: string`, `to: string` (ISO date or datetime) | `limit`, `offset` |
 | `query_fin_items_by_city` | Items where parent transaction's city matches | `city: string` | `exact: bool`, `limit`, `offset` |
-| `query_fin_items_by_category` | Items by category (and optional subcategory) | `category: string` | `subcategory: string`, `scope: "fin" \| "item" \| "either"` (default `"either"`), `limit`, `offset` |
+| `query_fin_items_by_category` | Items by category (and optional subcategory) | `category: string` | `subcategory: string`, `scope: "effective" \| "fin" \| "item" \| "either"` (default `"effective"`: the item pair, or the record pair when the item has none), `limit`, `offset` |
 | `query_fin_items_by_product` | Items by product `name` and/or `brand` | At least one of `name: string`, `brand: string` | `exact: bool`, `limit`, `offset` |
 
 Defaults: `limit = 50`, hard cap `MAX_LIMIT = 500`. `offset = 0`. Sort: `fin.date DESC`, then `fin_items.line_no ASC`.
@@ -95,7 +95,7 @@ Intended sequence: `analyze_receipt` → `build_fin_record` → show `summary` t
 
 The website returns `suggestedNecessityLevel` and `necessityReason` for each analyzed item.
 `build_fin_record` preserves valid suggestions and defaults missing or invalid suggestions to `essential`.
-The four values are `essential` (必需), `personal_priority` (享受), `flexible` (可选), and `unexpected` (突发).
+The four values are `essential` (必需), `personal_priority` (品质), `flexible` (可选), and `unexpected` (突发).
 The website supplies separate tax and tip items.
 Finance-db does not reclassify receipts.
 
@@ -113,6 +113,14 @@ MCP queries require the matching database columns before deployment.
 See [Spending Priority](spending-priority-feature.md) for definitions and Docker SQL commands.
 Apply the migration once per physical database, then restart Studio and MCP.
 Skip the migration if new-finance already added these columns.
+
+### Item categories and tax status
+
+The website returns `taxStatus`, `suggestedCategory`, and `suggestedSubcategory` for each analyzed item.
+The tax total arrives already split into one `税` item per category pair of the taxable goods.
+`build_fin_record` copies these values into each line item as `taxStatus`, `category`, and `subcategory`.
+A null item pair follows the record pair. The review summary shows item pairs and 计税 / 免税 labels.
+See [Item Categories](item-categories-feature.md) for the values and the SQL migration.
 
 ### Product photos
 
@@ -163,6 +171,9 @@ Each **query-tool** row is a `FinItemWithFin`:
   "necessityLevel": null,
   "necessityReason": null,
   "effectiveNecessityLevel": "essential",
+  "taxStatus": "taxable",
+  "effectiveCategory": "周末",
+  "effectiveSubcategory": "下午茶",
   "fin": {
     "finId": "05411F21-A0AE-4D65-BDAA-DE21A336CE76",
     "userId": 1,
@@ -196,6 +207,12 @@ The `tools/call` response wraps results as:
 
 `necessityLevel` is the raw item override.
 `effectiveNecessityLevel` uses that override or the nested `fin.necessityLevel` default.
+
+### Item categories
+
+`itemCategory` and `itemSubcategory` are the raw item pair. Null means that the item follows the record.
+`effectiveCategory` and `effectiveSubcategory` use the item pair, or the nested `fin` pair when the item has none.
+`taxStatus` is `taxable` (计税), `exempt` (免税), or `tax` (a 税 line).
 
 ### Currency
 
